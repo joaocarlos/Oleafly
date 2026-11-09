@@ -1166,8 +1166,8 @@ fn git_log_at(root: &PathBuf) -> Result<Vec<GitCommit>, String> {
 }
 
 #[tauri::command]
-pub async fn git_restore(
-    app: tauri::AppHandle,
+pub async fn git_restore<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, crate::state::AppState>,
     project_id: String,
     oid: String,
@@ -2446,8 +2446,8 @@ pub async fn git_fetch(project_id: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub async fn git_pull(
-    app: tauri::AppHandle,
+pub async fn git_pull<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, crate::state::AppState>,
     project_id: String,
     expected_generation: Option<u64>,
@@ -2883,8 +2883,8 @@ fn diff_at(root: &PathBuf, path: Option<&str>, staged: bool) -> Result<String, S
 }
 
 #[tauri::command]
-pub async fn git_discard(
-    app: tauri::AppHandle,
+pub async fn git_discard<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, crate::state::AppState>,
     project_id: String,
     path: String,
@@ -3133,8 +3133,8 @@ fn discard_paths_at(root: &PathBuf, paths: &[String]) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn git_discard_paths(
-    app: tauri::AppHandle,
+pub async fn git_discard_paths<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, crate::state::AppState>,
     project_id: String,
     paths: Vec<String>,
@@ -3641,8 +3641,8 @@ pub async fn git_create_branch(project_id: String, branch: String) -> Result<Str
 }
 
 #[tauri::command]
-pub async fn git_checkout_branch(
-    app: tauri::AppHandle,
+pub async fn git_checkout_branch<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, crate::state::AppState>,
     project_id: String,
     branch: String,
@@ -3776,8 +3776,8 @@ async fn run_git_worktree_operation<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-pub async fn git_stash_push(
-    app: tauri::AppHandle,
+pub async fn git_stash_push<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, crate::state::AppState>,
     project_id: String,
     expected_generation: Option<u64>,
@@ -3794,8 +3794,8 @@ pub async fn git_stash_push(
 }
 
 #[tauri::command]
-pub async fn git_stash_pop(
-    app: tauri::AppHandle,
+pub async fn git_stash_pop<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, crate::state::AppState>,
     project_id: String,
     expected_generation: Option<u64>,
@@ -3873,8 +3873,8 @@ fn resolve_conflict_side(root: &PathBuf, path: &str, resolution: &str) -> Result
 }
 
 #[tauri::command]
-pub async fn git_resolve_conflict(
-    app: tauri::AppHandle,
+pub async fn git_resolve_conflict<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, crate::state::AppState>,
     project_id: String,
     path: String,
@@ -3907,8 +3907,8 @@ pub async fn git_resolve_conflict(
 }
 
 #[tauri::command]
-pub async fn git_continue_merge(
-    app: tauri::AppHandle,
+pub async fn git_continue_merge<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, crate::state::AppState>,
     project_id: String,
     expected_generation: Option<u64>,
@@ -3946,8 +3946,8 @@ pub async fn git_continue_merge(
 }
 
 #[tauri::command]
-pub async fn git_abort_merge(
-    app: tauri::AppHandle,
+pub async fn git_abort_merge<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, crate::state::AppState>,
     project_id: String,
     expected_generation: Option<u64>,

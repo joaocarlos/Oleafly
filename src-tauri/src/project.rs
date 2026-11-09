@@ -2585,8 +2585,8 @@ fn deletion_removes_main_document(main_doc: &str, deleted_rel: &str) -> bool {
 }
 
 #[tauri::command]
-pub async fn rename_file(
-    app: tauri::AppHandle,
+pub async fn rename_file<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     project_id: String,
     from: String,
     to: String,

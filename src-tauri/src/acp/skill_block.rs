@@ -15,8 +15,8 @@ pub struct PromptSkill {
     pub folder: Option<PathBuf>,
 }
 
-pub(super) fn prompt_skill(
-    app: &tauri::AppHandle,
+pub(super) fn prompt_skill<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
     project_id: &str,
     skill_id: &str,
 ) -> Result<PromptSkill, String> {

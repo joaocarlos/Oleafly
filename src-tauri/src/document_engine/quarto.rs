@@ -2387,7 +2387,7 @@ mod tests {
     }
 
     async fn run_real(quarto: &Path, spec: &EngineCompileSpec) -> (String, Option<i32>) {
-        super::super::run_supervised_process_with_environment(
+        super::super::run_supervised_process_with_environment::<tauri::Wry>(
             quarto,
             &spec.args,
             &spec.working_dir,

@@ -8,7 +8,7 @@ use super::{
 };
 use oleafly_acp::controls::ConfigValue;
 use std::sync::Arc;
-use tauri::{AppHandle, Manager, State, Webview};
+use tauri::{AppHandle, Manager, Runtime, State, Webview};
 use zeroize::Zeroizing;
 
 async fn off_thread<T: Send + 'static>(
@@ -73,15 +73,15 @@ pub async fn acp_install(
     runtime.install(&agent_id).await
 }
 
-fn caller_label(webview: &Webview) -> Result<String, String> {
+fn caller_label<R: Runtime>(webview: &Webview<R>) -> Result<String, String> {
     crate::caller::own_window_label(webview)
         .ok_or_else(|| "Agents are unavailable from this view.".to_string())
 }
 
 #[tauri::command]
-pub async fn acp_start(
-    app: AppHandle,
-    webview: Webview,
+pub async fn acp_start<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     agent_id: String,
@@ -111,8 +111,8 @@ pub async fn acp_start(
 }
 
 #[tauri::command]
-pub async fn acp_cancel_start(
-    webview: Webview,
+pub async fn acp_cancel_start<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
 ) -> Result<bool, String> {
@@ -129,8 +129,8 @@ type AgentBridges = (
     Option<crate::cua_driver::CuaBridge>,
 );
 
-async fn start_agent_bridges(
-    app: AppHandle,
+async fn start_agent_bridges<R: Runtime>(
+    app: AppHandle<R>,
     runtime: &AcpRuntime,
     project_id: &str,
     agent_id: &str,
@@ -193,9 +193,9 @@ async fn keep_agent_bridges(
 }
 
 #[tauri::command]
-pub async fn acp_reconnect(
-    app: AppHandle,
-    webview: Webview,
+pub async fn acp_reconnect<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -229,8 +229,8 @@ pub async fn acp_reconnect(
 }
 
 #[tauri::command]
-pub async fn acp_prompt(
-    webview: Webview,
+pub async fn acp_prompt<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -257,8 +257,8 @@ pub async fn acp_prompt(
 }
 
 #[tauri::command]
-pub async fn acp_cancel(
-    webview: Webview,
+pub async fn acp_cancel<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     app_state: State<'_, crate::state::AppState>,
     project_id: String,
@@ -273,8 +273,8 @@ pub async fn acp_cancel(
 }
 
 #[tauri::command]
-pub async fn acp_disconnect(
-    webview: Webview,
+pub async fn acp_disconnect<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -286,8 +286,8 @@ pub async fn acp_disconnect(
 }
 
 #[tauri::command]
-pub async fn acp_authenticate(
-    webview: Webview,
+pub async fn acp_authenticate<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -302,8 +302,8 @@ pub async fn acp_authenticate(
 }
 
 #[tauri::command]
-pub async fn acp_set_model(
-    webview: Webview,
+pub async fn acp_set_model<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -316,8 +316,8 @@ pub async fn acp_set_model(
 }
 
 #[tauri::command]
-pub async fn acp_permission(
-    webview: Webview,
+pub async fn acp_permission<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -405,8 +405,8 @@ pub async fn acp_events(
 }
 
 #[tauri::command]
-pub async fn acp_check_agent(
-    webview: Webview,
+pub async fn acp_check_agent<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     agent_id: String,
     path: Option<String>,
@@ -423,8 +423,8 @@ pub async fn acp_check_agent(
 }
 
 #[tauri::command]
-pub async fn acp_pick_agent_program(
-    webview: Webview,
+pub async fn acp_pick_agent_program<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     agent_id: String,
 ) -> Result<Option<String>, String> {
@@ -452,8 +452,8 @@ pub async fn acp_pick_agent_program(
 }
 
 #[tauri::command]
-pub async fn acp_set_agent_program(
-    webview: Webview,
+pub async fn acp_set_agent_program<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     agent_id: String,
     path: Option<String>,
@@ -517,8 +517,8 @@ pub async fn acp_session_events_all(
         .map_err(|e| e.to_string())?
 }
 
-async fn owned(
-    webview: &Webview,
+async fn owned<R: Runtime>(
+    webview: &Webview<R>,
     runtime: &AcpRuntime,
     project_id: &str,
     session_id: &str,
@@ -538,8 +538,8 @@ pub async fn acp_preferences(
 }
 
 #[tauri::command]
-pub async fn acp_set_preferences(
-    webview: Webview,
+pub async fn acp_set_preferences<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     prefs: AcpPreferences,
 ) -> Result<AcpPreferences, String> {
@@ -557,8 +557,8 @@ pub async fn acp_agent_preferences(
 }
 
 #[tauri::command]
-pub async fn acp_set_agent_preferences(
-    webview: Webview,
+pub async fn acp_set_agent_preferences<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     agent_id: String,
     prefs: AgentPreferences,
@@ -572,8 +572,8 @@ pub async fn acp_set_agent_preferences(
 }
 
 #[tauri::command]
-pub async fn acp_set_agent_preference(
-    webview: Webview,
+pub async fn acp_set_agent_preference<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     agent_id: String,
     slot: String,
@@ -605,8 +605,8 @@ pub async fn acp_provider_choices(
 }
 
 #[tauri::command]
-pub async fn acp_buffer_reply(
-    webview: Webview,
+pub async fn acp_buffer_reply<R: Runtime>(
+    webview: Webview<R>,
     buffers: State<'_, Arc<super::buffers::WindowBuffers>>,
     request_id: String,
     content: Option<String>,
@@ -616,8 +616,8 @@ pub async fn acp_buffer_reply(
 }
 
 #[tauri::command]
-pub async fn acp_set_config_option(
-    webview: Webview,
+pub async fn acp_set_config_option<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -633,8 +633,8 @@ pub async fn acp_set_config_option(
 }
 
 #[tauri::command]
-pub async fn acp_set_mode(
-    webview: Webview,
+pub async fn acp_set_mode<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -649,8 +649,8 @@ pub async fn acp_set_mode(
 }
 
 #[tauri::command]
-pub async fn acp_refresh_plan_usage(
-    webview: Webview,
+pub async fn acp_refresh_plan_usage<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -664,8 +664,8 @@ pub async fn acp_refresh_plan_usage(
 }
 
 #[tauri::command]
-pub async fn acp_sign_in_command(
-    webview: Webview,
+pub async fn acp_sign_in_command<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: Option<String>,
     agent_id: String,
@@ -687,8 +687,8 @@ pub async fn acp_sign_in_command(
 }
 
 #[tauri::command]
-pub async fn acp_logout(
-    webview: Webview,
+pub async fn acp_logout<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -698,8 +698,8 @@ pub async fn acp_logout(
 }
 
 #[tauri::command]
-pub async fn acp_elicitation_respond(
-    webview: Webview,
+pub async fn acp_elicitation_respond<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -714,8 +714,8 @@ pub async fn acp_elicitation_respond(
 }
 
 #[tauri::command]
-pub async fn acp_steer(
-    webview: Webview,
+pub async fn acp_steer<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -726,8 +726,8 @@ pub async fn acp_steer(
 }
 
 #[tauri::command]
-pub async fn acp_session_rename(
-    webview: Webview,
+pub async fn acp_session_rename<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -739,8 +739,8 @@ pub async fn acp_session_rename(
 }
 
 #[tauri::command]
-pub async fn acp_session_delete(
-    webview: Webview,
+pub async fn acp_session_delete<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -764,8 +764,8 @@ pub async fn acp_session_delete(
 }
 
 #[tauri::command]
-pub async fn acp_agent_sessions(
-    webview: Webview,
+pub async fn acp_agent_sessions<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     agent_id: String,
@@ -781,8 +781,8 @@ pub async fn acp_agent_sessions(
 }
 
 #[tauri::command]
-pub async fn acp_session_import(
-    webview: Webview,
+pub async fn acp_session_import<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     agent_id: String,
@@ -798,9 +798,9 @@ pub async fn acp_session_import(
 }
 
 #[tauri::command]
-pub async fn acp_fork(
-    app: AppHandle,
-    webview: Webview,
+pub async fn acp_fork<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -824,8 +824,8 @@ pub async fn acp_fork(
 }
 
 #[tauri::command]
-pub async fn acp_commit_turn(
-    webview: Webview,
+pub async fn acp_commit_turn<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     session_id: String,
@@ -851,8 +851,8 @@ pub async fn acp_hermes_settings(
 }
 
 #[tauri::command]
-pub async fn acp_set_hermes_settings(
-    webview: Webview,
+pub async fn acp_set_hermes_settings<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     settings: HermesSettings,
@@ -880,8 +880,8 @@ pub async fn acp_hermes_status(
 }
 
 #[tauri::command]
-pub async fn acp_hermes_set_option(
-    webview: Webview,
+pub async fn acp_hermes_set_option<R: Runtime>(
+    webview: Webview<R>,
     runtime: State<'_, Arc<AcpRuntime>>,
     project_id: String,
     option: String,
@@ -896,8 +896,8 @@ pub async fn acp_hermes_set_option(
 }
 
 #[tauri::command]
-pub async fn acp_test_remote_hermes(
-    webview: Webview,
+pub async fn acp_test_remote_hermes<R: Runtime>(
+    webview: Webview<R>,
     project_id: String,
     remote: super::remote::RemoteHermes,
 ) -> Result<String, String> {

@@ -98,6 +98,15 @@ mod protocol;
 mod quit_gate;
 mod rag;
 mod release_notes;
+#[cfg(feature = "remote-bridge")]
+mod remote_bridge;
+#[cfg(any(feature = "remote-spike", feature = "remote-bridge"))]
+mod remote_commands;
+#[cfg(feature = "remote-spike")]
+mod remote_hub;
+#[cfg(feature = "remote-spike")]
+#[doc(hidden)]
+pub mod remote_spike;
 mod research_compute;
 mod research_lifecycle;
 mod research_mcp;
@@ -175,6 +184,8 @@ where
     let handler = window_commands::gated(handler);
     move |invoke| {
         let command = invoke.message.command().to_string();
+        #[cfg(feature = "remote-bridge")]
+        remote_bridge::trace_local(&command, invoke.message.payload());
         let _traced = crate::stall_trace::watch(|| format!("command {command}"));
         handler(invoke)
     }
@@ -505,6 +516,11 @@ pub fn run() {
         }
     }
 
+    #[cfg(feature = "remote-bridge")]
+    {
+        builder = builder.manage(remote_bridge::RemoteBridge::default());
+    }
+
     builder
         .manage(AppState::default())
         .manage(updater::UpdateState::default())
@@ -522,6 +538,18 @@ pub fn run() {
         .setup(setup_app)
         .invoke_handler(traced_commands(tauri::generate_handler![
             ad_hoc_conversion::convert_ad_hoc,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::remote_bindings,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::remote_call,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::remote_call_channel,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::remote_disconnect,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::remote_trust_folder,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::remote_stop_host,
             typst_render::render_typst_snippet,
             typst_query::typst_document_insights,
             typst_slide_notes::typst_slide_notes,

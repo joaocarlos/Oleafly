@@ -175,6 +175,19 @@ pub(crate) fn private_state_dir(kind: ProjectKind, state_dir: &Path) -> PathBuf 
 
 pub(crate) fn locate(project_id: &str) -> Result<ProjectLocation, LocateError> {
     crate::paths::validate_project_id(project_id).map_err(LocateError::Invalid)?;
+    // Remote daemon only: a project id can be attached to any folder on this host.
+    // Its state lives in the daemon's data dir, not in the folder.
+    #[cfg(feature = "remote-spike")]
+    if let Some((root, state_dir)) = crate::remote_spike::attached(project_id) {
+        return Ok(ProjectLocation {
+            id: project_id.to_owned(),
+            kind: ProjectKind::Linked,
+            state_dir,
+            manifest: ManifestSource::Sidecar,
+            compile_dir: root.clone(),
+            root,
+        });
+    }
     let generation = crate::project_availability::location_generation(project_id);
     let registry_failure = match linked_registry::cached_membership(project_id) {
         Ok(Membership::Active(member)) => return observed(project_id, generation, member),
@@ -211,6 +224,10 @@ fn observed(
 
 pub(crate) fn linked_state_dir(project_id: &str) -> Result<Option<PathBuf>, String> {
     crate::paths::validate_project_id(project_id)?;
+    #[cfg(feature = "remote-spike")]
+    if let Some((_, state_dir)) = crate::remote_spike::attached(project_id) {
+        return Ok(Some(state_dir));
+    }
     let membership = match linked_registry::cached_membership(project_id) {
         Ok(Membership::Absent)
             if linked_registry::is_linked_id(project_id) && !library_claims(project_id) =>

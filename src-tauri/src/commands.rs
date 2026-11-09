@@ -323,8 +323,8 @@ pub(crate) fn record_compile_output(record: CompiledRecord) {
 
 #[tauri::command]
 #[allow(clippy::too_many_arguments)]
-pub async fn compile_project(
-    app: tauri::AppHandle,
+pub async fn compile_project<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: State<'_, AppState>,
     project_id: String,
     main_doc: String,
@@ -474,9 +474,14 @@ pub async fn compile_project(
             &toolchain_identity,
             pdf_plan.and_then(|plan| plan.compiled(result.has_pdf, result.output_id.as_deref())),
         );
-        if let (true, Some(output_id)) = (result.has_pdf, result.output_id.clone()) {
+        // Uploading a shared project's PDF belongs to the desktop app's collaboration
+        // session; a headless host (remote workspace) has none.
+        let desktop = (&app as &dyn std::any::Any).downcast_ref::<tauri::AppHandle>();
+        if let (Some(app), true, Some(output_id)) =
+            (desktop, result.has_pdf, result.output_id.clone())
+        {
             crate::collab::output::upload_after_compile(
-                &app,
+                app,
                 crate::collab::output::CompiledOutput {
                     project_id: project_id.clone(),
                     engine: meta.engine.clone(),

@@ -565,8 +565,8 @@ async fn start_and_initialize(
     result
 }
 
-pub(crate) async fn pick_program(
-    app: &tauri::AppHandle,
+pub(crate) async fn pick_program<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
     definition: &AgentDefinition,
     start: Option<PathBuf>,
 ) -> Result<Option<PathBuf>, String> {
@@ -600,8 +600,8 @@ pub(crate) async fn pick_program(
     Ok(Some(locator::child_path(&path)))
 }
 
-pub(crate) async fn confirm_program(
-    app: &tauri::AppHandle,
+pub(crate) async fn confirm_program<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
     definition: &AgentDefinition,
     path: &Path,
 ) -> Result<bool, String> {

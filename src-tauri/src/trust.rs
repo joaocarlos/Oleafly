@@ -1171,6 +1171,40 @@ pub async fn confirm_ai_tool<R: tauri::Runtime>(
     native_confirm(&app, title, message, confirm).await
 }
 
+/// Remote workspaces: the question is asked on this computer, the grant is
+/// applied on the host that runs the code. Wording and defaults are the local
+/// folder's; only the name tells where the folder lives.
+#[cfg(feature = "remote-bridge")]
+pub(crate) async fn confirm_remote_folder<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    host: &str,
+    path: &str,
+) -> Result<bool, String> {
+    let name = format!("{path} ({host})");
+    native_confirm(
+        app,
+        "dialog.trustFolder.title",
+        crate::i18n::t_with("dialog.trustFolder.message", &[("name", &name)]),
+        "dialog.trustFolder.confirm",
+    )
+    .await
+}
+
+/// Runs on the host, after the user answered on their own computer.
+#[cfg(feature = "remote-spike")]
+pub(crate) async fn grant_confirmed_remotely(
+    project_id: String,
+    scope: TrustScope,
+) -> Result<ProjectTrust, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let target = grant_target(&project_id, scope)?;
+        apply_grant(&project_id, &target)?;
+        describe(&project_id).map_err(String::from)
+    })
+    .await
+    .map_err(|error| error.to_string())?
+}
+
 #[tauri::command]
 pub async fn project_trust_state(project_id: String) -> Result<ProjectTrust, String> {
     tauri::async_runtime::spawn_blocking(move || describe(&project_id).map_err(String::from))

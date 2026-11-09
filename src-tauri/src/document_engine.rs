@@ -1687,8 +1687,8 @@ pub struct CompileOptions {
     pub typst_settings: Option<crate::typst_options::TypstCompileSettings>,
 }
 
-pub struct CompileRequest<'a> {
-    pub app: &'a tauri::AppHandle,
+pub struct CompileRequest<'a, AppRt: tauri::Runtime = tauri::Wry> {
+    pub app: &'a tauri::AppHandle<AppRt>,
     pub engine: &'a dyn DocumentEngine,
     pub out_dir: &'a Path,
     pub project_dir: &'a Path,
@@ -1783,8 +1783,8 @@ impl Drop for CompileCancelScope<'_> {
     }
 }
 
-async fn recover_pythontex(
-    request: &CompileRequest<'_>,
+async fn recover_pythontex<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
     stdout_buf: &mut String,
     exit_code: &mut Option<i32>,
@@ -1812,7 +1812,10 @@ async fn recover_pythontex(
     run_pythontex_recovery(request, spec, stdout_buf, exit_code, latexmk, &pythontex).await
 }
 
-fn pythontex_recovery_allowed(request: &CompileRequest<'_>, exit_code: Option<i32>) -> bool {
+fn pythontex_recovery_allowed<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
+    exit_code: Option<i32>,
+) -> bool {
     request.engine.id() == DocumentEngineId::Latexmk
         && matches!(request.target, CompileTarget::Main { .. })
         && request.options.allow_shell_escape
@@ -1828,8 +1831,8 @@ fn missing_pythontex(latexmk: &Path, exit_code: &mut Option<i32>) -> (String, Op
     (format!("\n[Oleafly] {message}\n"), Some(message))
 }
 
-async fn run_pythontex_recovery(
-    request: &CompileRequest<'_>,
+async fn run_pythontex_recovery<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
     stdout_buf: &mut String,
     exit_code: &mut Option<i32>,
@@ -1877,8 +1880,8 @@ async fn run_pythontex_recovery(
     }
 }
 
-async fn rerun_after_pythontex(
-    request: &CompileRequest<'_>,
+async fn rerun_after_pythontex<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
     stdout_buf: &mut String,
     exit_code: &mut Option<i32>,
@@ -1927,8 +1930,8 @@ fn append_failure(mut notes: String, message: String) -> Result<(String, Option<
     Ok((notes, Some(message)))
 }
 
-async fn recover_bibliography(
-    request: &CompileRequest<'_>,
+async fn recover_bibliography<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
     stdout_buf: &mut String,
     exit_code: &mut Option<i32>,
@@ -2035,8 +2038,8 @@ fn append_engine_output_on_failure(
     log
 }
 
-async fn run_biber_recovery(
-    request: &CompileRequest<'_>,
+async fn run_biber_recovery<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
     stdout_buf: &mut String,
     exit_code: &mut Option<i32>,
@@ -2087,8 +2090,8 @@ fn append_biber_diagnosis(notes: &mut String, log: &str, biber: &Path) {
     append_bounded(notes, diagnosis.as_bytes());
 }
 
-async fn rerun_after_biber(
-    request: &CompileRequest<'_>,
+async fn rerun_after_biber<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
     stdout_buf: &mut String,
     exit_code: &mut Option<i32>,
@@ -2143,8 +2146,8 @@ struct CompileFinish {
     pythontex_failure: Option<String>,
 }
 
-async fn finish_compile(
-    request: &CompileRequest<'_>,
+async fn finish_compile<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     finish: CompileFinish,
     stopped: bool,
 ) -> Result<CompileResult, String> {
@@ -2259,8 +2262,8 @@ fn seed_project_bibliography(project_dir: &Path, main_document: &str, out_dir: &
     }
 }
 
-fn append_tex_output_notes(
-    request: &CompileRequest<'_>,
+fn append_tex_output_notes<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
     failed: bool,
     log: &mut String,
@@ -2380,8 +2383,8 @@ fn apply_image_findings(
 
 type ParsedCompileLog = (String, Vec<oleafly_core::LogDiagnostic>, Vec<CompileError>);
 
-async fn typst_glyph_warnings(
-    request: &CompileRequest<'_>,
+async fn typst_glyph_warnings<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
 ) -> Vec<CompileError> {
     let CompileTarget::Main { main_document } = request.target else {
@@ -2483,8 +2486,8 @@ async fn parse_log_diagnostics(
     .map_err(|error| format!("failed to parse the compile log: {error}"))
 }
 
-fn compile_succeeded(
-    request: &CompileRequest<'_>,
+fn compile_succeeded<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
     stopped: bool,
     has_pdf: bool,
@@ -2586,8 +2589,8 @@ fn append_bundle_fetch_notes(log: &mut String, stdout: &str, exit_code: Option<i
     }
 }
 
-fn append_missing_biber_diagnosis(
-    request: &CompileRequest<'_>,
+fn append_missing_biber_diagnosis<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
     log: &mut String,
     resolved_biber: Option<PathBuf>,
@@ -2694,8 +2697,8 @@ fn tex_blocker_card(blocker: &crate::tex_distro::TexBlocker, message: String) ->
     coded_compile_card(blocker.code, message, &params)
 }
 
-fn latexmk_setup_gap(
-    request: &CompileRequest<'_>,
+fn latexmk_setup_gap<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
     stdout: &str,
     exit_code: Option<i32>,
@@ -2785,8 +2788,8 @@ fn append_unreported_failure(
     });
 }
 
-fn append_shell_escape_error(
-    request: &CompileRequest<'_>,
+fn append_shell_escape_error<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
     stopped: bool,
     has_pdf: bool,
@@ -2860,8 +2863,8 @@ fn build_compile_result(
     }
 }
 
-fn validate_compile_capabilities(
-    request: &CompileRequest<'_>,
+fn validate_compile_capabilities<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     capabilities: EngineCapabilities,
 ) -> Result<(), String> {
     if request.options.offline && !capabilities.supports_offline {
@@ -2881,7 +2884,9 @@ fn validate_compile_capabilities(
     Ok(())
 }
 
-async fn resolve_compile_spec(request: &CompileRequest<'_>) -> Result<EngineCompileSpec, String> {
+async fn resolve_compile_spec<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
+) -> Result<EngineCompileSpec, String> {
     if let Some(spec) = &request.prepared_spec {
         return Ok(spec.clone());
     }
@@ -2895,8 +2900,8 @@ async fn resolve_compile_spec(request: &CompileRequest<'_>) -> Result<EngineComp
     .await
 }
 
-async fn prepare_compile_artifacts(
-    request: &CompileRequest<'_>,
+async fn prepare_compile_artifacts<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
 ) -> Result<Vec<RetainedArtifact>, String> {
     let cleanup_artifacts = spec.artifacts.clone();
@@ -2995,8 +3000,8 @@ async fn restore_first_run_log(spec: &EngineCompileSpec, log: Option<Vec<u8>>) {
     }
 }
 
-async fn execute_compile_spec(
-    request: &CompileRequest<'_>,
+async fn execute_compile_spec<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
 ) -> Result<(String, Option<i32>), String> {
     match &spec.executable {
@@ -3192,8 +3197,8 @@ async fn wait_for_build_lock(
     }
 }
 
-async fn acquire_build_lock(
-    request: &CompileRequest<'_>,
+async fn acquire_build_lock<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
 ) -> Result<BuildLockWait, String> {
     if !matches!(request.target, CompileTarget::Main { .. }) {
@@ -3218,8 +3223,8 @@ async fn acquire_build_lock(
     .await
 }
 
-async fn hold_quarto_siblings(
-    request: &CompileRequest<'_>,
+async fn hold_quarto_siblings<AppRt: tauri::Runtime>(
+    request: &CompileRequest<'_, AppRt>,
     spec: &EngineCompileSpec,
 ) -> Result<Option<quarto::SiblingHold>, String> {
     if request.engine.id() != DocumentEngineId::Quarto {
@@ -3239,7 +3244,9 @@ async fn release_quarto_siblings(hold: Option<quarto::SiblingHold>, succeeded: b
     let _ = tokio::task::spawn_blocking(move || drop(hold)).await;
 }
 
-pub async fn compile(request: CompileRequest<'_>) -> Result<CompileResult, String> {
+pub async fn compile<AppRt: tauri::Runtime>(
+    request: CompileRequest<'_, AppRt>,
+) -> Result<CompileResult, String> {
     let cancel_scope = CompileCancelScope::new(request.cancel);
     let capabilities = request.engine.capabilities();
     validate_compile_capabilities(&request, capabilities)?;
@@ -3376,8 +3383,8 @@ fn read_log_bounded(path: &Path) -> std::io::Result<String> {
     Ok(output)
 }
 
-async fn run_bundled_with_environment(
-    app: &tauri::AppHandle,
+async fn run_bundled_with_environment<AppRt: tauri::Runtime>(
+    app: &tauri::AppHandle<AppRt>,
     name: &str,
     args: &[String],
     working_dir: &Path,
@@ -3411,9 +3418,9 @@ pub(crate) fn resolve_bundled_sidecar(name: &str) -> Result<PathBuf, String> {
     })
 }
 
-fn emit_and_collect_compiler_text(
+fn emit_and_collect_compiler_text<AppRt: tauri::Runtime>(
     text: &str,
-    app: Option<&tauri::AppHandle>,
+    app: Option<&tauri::AppHandle<AppRt>>,
     event: &str,
     emitted: &std::sync::atomic::AtomicUsize,
     collected: &mut String,
@@ -3431,9 +3438,9 @@ fn emit_and_collect_compiler_text(
     append_bounded(collected, text.as_bytes());
 }
 
-async fn pump_external_output<R>(
+async fn pump_external_output<R, AppRt: tauri::Runtime>(
     mut reader: R,
-    app: Option<tauri::AppHandle>,
+    app: Option<tauri::AppHandle<AppRt>>,
     log_event: String,
     emitted: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     clock: std::sync::Arc<oleafly_core::compile_limit::CompileClock>,
@@ -3474,8 +3481,8 @@ where
     collected
 }
 
-async fn run_external_with_environment(
-    app: &tauri::AppHandle,
+async fn run_external_with_environment<AppRt: tauri::Runtime>(
+    app: &tauri::AppHandle<AppRt>,
     path: &Path,
     args: &[String],
     working_dir: &Path,
@@ -3500,7 +3507,7 @@ pub async fn run_supervised_external(
     args: &[String],
     working_dir: &Path,
 ) -> Result<(String, Option<i32>), String> {
-    run_supervised_process(path, args, working_dir, None, COMPILE_TIMEOUT, None).await
+    run_supervised_process::<tauri::Wry>(path, args, working_dir, None, COMPILE_TIMEOUT, None).await
 }
 
 pub(crate) async fn run_supervised_external_with_variables(
@@ -3513,7 +3520,7 @@ pub(crate) async fn run_supervised_external_with_variables(
         EngineEnvironment::default(),
         |environment, (name, value)| environment.with_variable(name, value.clone()),
     );
-    run_supervised_process_with_environment(
+    run_supervised_process_with_environment::<tauri::Wry>(
         path,
         args,
         working_dir,
@@ -3539,7 +3546,7 @@ pub(crate) async fn run_supervised_external_with_stdin(
             |environment, (name, value)| environment.with_variable(name, value.clone()),
         )
         .with_stdin(stdin.to_owned());
-    run_supervised_process_with_environment(
+    run_supervised_process_with_environment::<tauri::Wry>(
         path,
         args,
         working_dir,
@@ -3557,7 +3564,15 @@ pub(crate) async fn run_supervised_external_cancellable(
     working_dir: &Path,
     cancel: &crate::state::CompileCancel,
 ) -> Result<(String, Option<i32>), String> {
-    run_supervised_process(path, args, working_dir, None, COMPILE_TIMEOUT, Some(cancel)).await
+    run_supervised_process::<tauri::Wry>(
+        path,
+        args,
+        working_dir,
+        None,
+        COMPILE_TIMEOUT,
+        Some(cancel),
+    )
+    .await
 }
 
 struct CompileChildRegistration<'a> {
@@ -3617,11 +3632,11 @@ async fn drain_compiler_output(
     (log, stalled)
 }
 
-async fn run_supervised_process(
+async fn run_supervised_process<AppRt: tauri::Runtime>(
     path: &Path,
     args: &[String],
     working_dir: &Path,
-    emitter: Option<(tauri::AppHandle, String)>,
+    emitter: Option<(tauri::AppHandle<AppRt>, String)>,
     timeout: std::time::Duration,
     cancel: Option<&crate::state::CompileCancel>,
 ) -> Result<(String, Option<i32>), String> {
@@ -3710,11 +3725,11 @@ async fn wait_within_limit(
     }
 }
 
-async fn run_supervised_process_with_environment(
+async fn run_supervised_process_with_environment<AppRt: tauri::Runtime>(
     path: &Path,
     args: &[String],
     working_dir: &Path,
-    emitter: Option<(tauri::AppHandle, String)>,
+    emitter: Option<(tauri::AppHandle<AppRt>, String)>,
     timeout: std::time::Duration,
     cancel: Option<&crate::state::CompileCancel>,
     environment: &EngineEnvironment,
@@ -4599,7 +4614,7 @@ mod tests {
     async fn a_crashed_compiler_says_so_and_a_killed_one_does_not() {
         async fn run(root: &Path, script: &str) -> (String, Option<i32>) {
             let args = vec!["-c".to_string(), script.to_string()];
-            run_supervised_process(
+            run_supervised_process::<tauri::Wry>(
                 Path::new("/bin/sh"),
                 &args,
                 root,
@@ -4636,7 +4651,7 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let script = "printf '(main.tex (fontspec.sty))'; printf 'warning: main.tex:5: \\nRequested font \"Fira Sans Light\" at 9.99997pt\\n' >&2; kill -SEGV $$";
         let args = vec!["-c".to_string(), script.to_string()];
-        let (log, code) = run_supervised_process(
+        let (log, code) = run_supervised_process::<tauri::Wry>(
             Path::new("/bin/sh"),
             &args,
             root.path(),
@@ -5002,7 +5017,7 @@ mod tests {
     #[tokio::test]
     async fn a_timeout_message_starts_its_own_line() {
         let root = tempfile::tempdir().unwrap();
-        let (log, code) = run_supervised_process(
+        let (log, code) = run_supervised_process::<tauri::Wry>(
             Path::new("/bin/sh"),
             &[
                 "-c".into(),
@@ -5028,7 +5043,7 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let script =
             "for i in 1 2 3 4; do echo \"note: downloading f$i.sty\"; sleep 0.2; done; echo done";
-        let (log, code) = run_supervised_process(
+        let (log, code) = run_supervised_process::<tauri::Wry>(
             Path::new("/bin/sh"),
             &["-c".into(), script.into()],
             root.path(),
@@ -5047,7 +5062,7 @@ mod tests {
     async fn output_that_is_not_a_download_does_not_extend_the_limit() {
         let root = tempfile::tempdir().unwrap();
         let script = "while true; do echo \"note: Running TeX ...\"; sleep 0.05; done";
-        let (log, code) = run_supervised_process(
+        let (log, code) = run_supervised_process::<tauri::Wry>(
             Path::new("/bin/sh"),
             &["-c".into(), script.into()],
             root.path(),
@@ -5067,7 +5082,7 @@ mod tests {
         let root = tempfile::tempdir().unwrap().keep();
         let marker = root.join("grandchild-survived");
         let script = format!("(sleep 0.35; touch '{}') & wait", marker.display());
-        let (log, code) = run_supervised_process(
+        let (log, code) = run_supervised_process::<tauri::Wry>(
             Path::new("/bin/sh"),
             &["-c".into(), script],
             &root,
@@ -5098,7 +5113,7 @@ mod tests {
             pid_path.display()
         );
         let started = std::time::Instant::now();
-        let (log, code) = run_supervised_process(
+        let (log, code) = run_supervised_process::<tauri::Wry>(
             Path::new("/bin/sh"),
             &["-c".into(), script],
             &root,
@@ -5155,7 +5170,7 @@ mod tests {
                 "[Console]::Out.Write($env:PAR_GLOBAL_TMPDIR)".to_string(),
             ],
         );
-        let outcome = run_supervised_process(
+        let outcome = run_supervised_process::<tauri::Wry>(
             program,
             &args,
             data.path(),
@@ -5204,7 +5219,7 @@ mod tests {
         std::fs::write(&biber, b"#!/bin/sh\nexit 0\n").unwrap();
         let previous = std::env::var_os("OLEAFLY_DATA_DIR");
         std::env::set_var("OLEAFLY_DATA_DIR", data.path());
-        let outcome = run_supervised_process(
+        let outcome = run_supervised_process::<tauri::Wry>(
             &latexmk,
             &[
                 "-c".to_string(),
@@ -5269,7 +5284,7 @@ mod tests {
         std::fs::set_permissions(&biber, std::fs::Permissions::from_mode(0o755)).unwrap();
         let previous = std::env::var_os("OLEAFLY_DATA_DIR");
         std::env::set_var("OLEAFLY_DATA_DIR", data.path());
-        let outcome = run_supervised_process(
+        let outcome = run_supervised_process::<tauri::Wry>(
             &latexmk,
             &["-c".to_string(), "command -v biber && biber".to_string()],
             data.path(),
@@ -6622,7 +6637,7 @@ mod tests {
             )
             .unwrap();
             let latex = project.join("main.tex");
-            let (log, code) = run_supervised_process_with_environment(
+            let (log, code) = run_supervised_process_with_environment::<tauri::Wry>(
                 &pandoc,
                 &pandoc_args_writing(&spec, "latex", &latex),
                 &spec.working_dir,
@@ -6660,7 +6675,7 @@ mod tests {
         let bases = tempfile::tempdir().unwrap();
         let spec = markdown_spec_with(&project.join("build"), &project, test_scratch(bases.path()));
         let output = project.join("main.native");
-        let (log, code) = run_supervised_process_with_environment(
+        let (log, code) = run_supervised_process_with_environment::<tauri::Wry>(
             &pandoc,
             &pandoc_args_writing(&spec, "native", &output),
             &spec.working_dir,
@@ -7129,7 +7144,7 @@ printf '%s\n' '%PDF-1.4' '%%EOF' > "$outdir/texput.pdf"
                 .map(|(name, value)| ((*name).to_owned(), value.clone()))
                 .chain(spec.environment.variables.iter().cloned())
                 .collect();
-            run_supervised_process_with_environment(
+            run_supervised_process_with_environment::<tauri::Wry>(
                 pandoc,
                 &spec.args,
                 &spec.working_dir,
@@ -9434,7 +9449,7 @@ printf '%s\n' '%PDF-1.4' '%%EOF' > "$outdir/texput.pdf"
         let EngineExecutable::ExternalPath(latexmk) = spec.executable.clone() else {
             unreachable!()
         };
-        let (log, code) = run_supervised_process_with_environment(
+        let (log, code) = run_supervised_process_with_environment::<tauri::Wry>(
             &latexmk,
             &spec.args,
             &spec.working_dir,
@@ -9686,7 +9701,7 @@ printf '%s\n' '%PDF-1.4' '%%EOF' > "$outdir/texput.pdf"
         let EngineExecutable::ExternalPath(latexmk) = &spec.executable else {
             unreachable!()
         };
-        let (_, code) = run_supervised_process_with_environment(
+        let (_, code) = run_supervised_process_with_environment::<tauri::Wry>(
             latexmk,
             &spec.args,
             &spec.working_dir,
@@ -9743,7 +9758,7 @@ printf '%s\n' '%PDF-1.4' '%%EOF' > "$outdir/texput.pdf"
         let EngineExecutable::ExternalPath(latexmk) = &spec.executable else {
             unreachable!()
         };
-        let (log, code) = run_supervised_process_with_environment(
+        let (log, code) = run_supervised_process_with_environment::<tauri::Wry>(
             latexmk,
             &spec.args,
             &spec.working_dir,
@@ -9813,7 +9828,7 @@ printf '%s\n' '%PDF-1.4' '%%EOF' > "$outdir/texput.pdf"
             let EngineExecutable::ExternalPath(latexmk) = &spec.executable else {
                 unreachable!()
             };
-            let (log, code) = run_supervised_process_with_environment(
+            let (log, code) = run_supervised_process_with_environment::<tauri::Wry>(
                 latexmk,
                 &spec.args,
                 &spec.working_dir,
@@ -9917,7 +9932,7 @@ printf '%s\n' '%PDF-1.4' '%%EOF' > "$outdir/texput.pdf"
                     let EngineExecutable::ExternalPath(latexmk) = &spec.executable else {
                         unreachable!()
                     };
-                    let (log, code) = run_supervised_process_with_environment(
+                    let (log, code) = run_supervised_process_with_environment::<tauri::Wry>(
                         latexmk,
                         &spec.args,
                         &spec.working_dir,
@@ -10005,7 +10020,7 @@ printf '%s\n' '%PDF-1.4' '%%EOF' > "$outdir/texput.pdf"
         let EngineExecutable::ExternalPath(latexmk) = &spec.executable else {
             unreachable!()
         };
-        let (log, code) = run_supervised_process_with_environment(
+        let (log, code) = run_supervised_process_with_environment::<tauri::Wry>(
             latexmk,
             &spec.args,
             &spec.working_dir,

@@ -161,6 +161,15 @@ liblzma = { version = "=0.4.8", default-features = false, features = ["static"] 
 custom-protocol = ["tauri/custom-protocol"]
 # E2E automation bridge (Playwright socket server); never in release builds.
 e2e-testing = ["dep:tauri-plugin-playwright", "oleafly-collab/e2e-hooks"]
+# SPIKE: headless command host (oleafly-remoted) on Tauri's MockRuntime.
+remote-spike = ["tauri/test"]
+# Local side of remote workspaces: routes a project's terminal and agents over ssh.
+remote-bridge = []
+
+[[bin]]
+name = "oleafly-remoted"
+path = "src/bin/oleafly-remoted.rs"
+required-features = ["remote-spike"]
 
 [dev-dependencies]
 tauri = { version = "2", features = ["test"] }

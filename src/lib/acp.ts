@@ -1,5 +1,5 @@
 import { i18n } from "@/i18n";
-import { invoke } from "@tauri-apps/api/core";
+import { routedInvoke as invoke } from "@/lib/remote-workspace";
 import { listen } from "@tauri-apps/api/event";
 import { decodeAppError, errorText } from "@/lib/app-error";
 

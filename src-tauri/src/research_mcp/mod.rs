@@ -9,8 +9,8 @@ pub use oleafly_research::mcp::{
     serve_stdio_bridge, stdio_bridge_requested, stdio_server, ScopedResearchMcp,
 };
 
-pub async fn start(
-    app: tauri::AppHandle,
+pub async fn start<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     project_id: String,
     execution_root: Option<PathBuf>,
 ) -> Result<ScopedResearchMcp, String> {
@@ -18,8 +18,8 @@ pub async fn start(
     start_inner(pack, project_id, execution_root, None, None).await
 }
 
-pub async fn start_restricted(
-    app: tauri::AppHandle,
+pub async fn start_restricted<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     project_id: String,
     execution_root: PathBuf,
     allowed_paths: Vec<String>,

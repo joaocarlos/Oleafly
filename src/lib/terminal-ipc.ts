@@ -1,4 +1,5 @@
-import { type Channel, invoke } from "@tauri-apps/api/core";
+import { type Channel, invoke as localInvoke } from "@tauri-apps/api/core";
+import { routedInvoke as invoke } from "@/lib/remote-workspace";
 import type { ExternalTerminalId, TerminalShellId } from "@/store/settings";
 import type { TerminalCommand, TerminalShellKind } from "./terminal-quote";
 
@@ -38,7 +39,7 @@ export interface ExternalTerminalOption {
 }
 
 export function externalTerminals(): Promise<ExternalTerminalOption[]> {
-  return invoke<ExternalTerminalOption[]>("external_terminals");
+  return localInvoke<ExternalTerminalOption[]>("external_terminals");
 }
 
 export function openExternalTerminal(args: {
@@ -48,7 +49,7 @@ export function openExternalTerminal(args: {
   command?: TerminalCommand;
   env?: Record<string, string>;
 }): Promise<void> {
-  return invoke<void>("open_external_terminal", {
+  return localInvoke<void>("open_external_terminal", {
     projectId: args.projectId,
     terminal: args.terminal,
     cwd: args.cwd ?? null,

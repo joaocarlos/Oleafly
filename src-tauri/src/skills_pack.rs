@@ -70,7 +70,7 @@ fn dev_pack_root() -> Option<PathBuf> {
     candidate.is_dir().then_some(candidate)
 }
 
-pub fn pack_root(app: &tauri::AppHandle) -> Option<PathBuf> {
+pub fn pack_root<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<PathBuf> {
     use tauri::Manager as _;
     if let Ok(path) = app
         .path()
