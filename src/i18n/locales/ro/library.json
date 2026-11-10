@@ -225,7 +225,72 @@
     "template": {
       "title": "Folosește un șablon",
       "description": "Începe de la un aspect pregătit pentru un articol de revistă, o teză, un raport, un poster sau o prezentare."
+    },
+    "remote": {
+      "title": "Spațiu de lucru la distanță",
+      "description": "Lucrează într-un dosar aflat pe alt calculator. Fișierele, terminalul, agenții, Git și compilarea LaTeX rulează acolo."
     }
+  },
+  "remote": {
+    "description": "Proiectul rămâne pe alt calculator. Oleafly se conectează cu propriile tale chei SSH și rulează acolo terminalul, agenții, fișierele, Git și compilarea LaTeX.",
+    "host": {
+      "title": "Care calculator?",
+      "known": "Din configurația ta SSH",
+      "hostLabel": "Gazdă",
+      "userLabel": "Utilizator (opțional)",
+      "portLabel": "Port (opțional)",
+      "hint": "Oleafly se autentifică cu cheile tale SSH sau cu agentul și nu cere niciodată o parolă. Dacă ssh către această gazdă funcționează într-un terminal fără întrebări, funcționează și aici.",
+      "connect": "Conectează"
+    },
+    "checking": "Se conectează la {{host}}…",
+    "failed": {
+      "title": "Nu s-a putut configura {{host}}",
+      "auth": "{{host}} nu a acceptat cheile tale SSH. Verifică dacă te poți conecta cu ssh dintr-un terminal fără să ți se ceară parola și dacă cheia este încărcată în agentul SSH.",
+      "network": "Oleafly nu a putut ajunge la {{host}}. Verifică numele, portul și rețeaua sau VPN-ul.",
+      "ssh": "OpenSSH nu este instalat pe acest calculator. Instalează-l și încearcă din nou."
+    },
+    "helper": {
+      "title": "Oleafly pe {{host}}",
+      "system": "Sistem: {{system}}",
+      "latexmk": "Compilare LaTeX (latexmk): {{status}}",
+      "git": "Git: {{status}}",
+      "found": "găsit",
+      "notFound": "negăsit",
+      "installed": "Ajutorul Oleafly ({{version}}) este instalat pe {{host}}.",
+      "installBody": "Oleafly va copia un program mic, ajutorul, în {{dir}} pe {{host}} prin conexiunea ta SSH. Este verificat cu SHA-256 înainte de a fi pus la locul lui și rulează acolo terminalul, agenții și compilările. Nimic în afara ~/.oleafly nu este modificat, iar ștergerea acelui dosar îl elimină.",
+      "size": "Dimensiune: {{size}}",
+      "install": "Instalează pe {{host}}",
+      "checking": "Se verifică {{host}}…",
+      "copying": "Se copiază ajutorul: {{sent}} din {{total}}",
+      "verifying": "Se verifică copia…",
+      "stop": "Oprește",
+      "libsTitle": "Lipsesc bibliotecile de care are nevoie ajutorul",
+      "libsBody": "Pe {{host}} lipsesc {{libs}}, iar ajutorul pornește doar după ce sunt instalate. Pe Ubuntu sau Debian, rulează comanda de mai jos pe gazdă, apoi verifică din nou.",
+      "libsCheck": "Verifică din nou",
+      "continue": "Continuă"
+    },
+    "folder": {
+      "title": "Care dosar?",
+      "body": "Alege dosarul de pe {{host}} care conține proiectul sau creează unul.",
+      "pathLabel": "Dosar pe gazdă",
+      "up": "Un nivel mai sus",
+      "empty": "Niciun dosar aici.",
+      "items": "Elemente în acest dosar: {{count}}",
+      "hasTex": "Conține fișiere LaTeX",
+      "hasGit": "Este un depozit Git",
+      "notWritable": "Nu poți scrie în acest dosar de pe gazdă.",
+      "tooBroad": "Alege un dosar în {{home}}. Un dosar personal întreg sau un disc este prea larg pentru un proiect.",
+      "missing": "Acest dosar nu există pe gazdă.",
+      "createMissing": "Creează-l",
+      "denied": "Gazda nu ți-a permis să deschizi acest dosar.",
+      "newFolder": "Dosar nou",
+      "newFolderPlaceholder": "Numele dosarului",
+      "createFolder": "Creează",
+      "nameLabel": "Numele proiectului",
+      "create": "Creează proiectul"
+    },
+    "creating": "Se conectează la {{host}} și se deschide dosarul…",
+    "createFailed": "Proiectul nu a putut fi creat."
   },
   "import": {
     "title": "Importă un proiect",

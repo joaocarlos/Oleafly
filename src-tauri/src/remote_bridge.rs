@@ -15,8 +15,8 @@
 //!
 //! ssh runs through the same hardened arguments the research runs use: the
 //! user's own OpenSSH, keys or agent only, no prompts, known hosts checked.
-use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
+use std::collections::{BTreeMap, HashMap, HashSet};
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
@@ -32,19 +32,23 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{ChildStdin, Command};
 use tokio::sync::{oneshot, Mutex as AsyncMutex};
 
-#[derive(Clone, Debug, Deserialize)]
+/// Setting a remote workspace up from the app: the host check, the helper's installation, the
+/// folder and the project. It reaches into this module's private binding file and connection code.
+pub(crate) mod setup;
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct Binding {
     host: String,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     user: Option<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     port: Option<u16>,
     path: String,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     main_doc: Option<String>,
     /// LaTeX engine for a project seeded on the host; `latexmk` unless set.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     engine: Option<String>,
     /// Keep the daemon running on the host between connections (reattach after a drop).
     #[serde(default)]
@@ -86,10 +90,10 @@ impl Binding {
     }
 }
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Serialize)]
 struct Config {
     #[serde(default)]
-    projects: HashMap<String, Binding>,
+    projects: BTreeMap<String, Binding>,
 }
 
 fn config_file() -> Result<PathBuf, String> {
@@ -102,6 +106,54 @@ fn load_config() -> Config {
         .and_then(|file| std::fs::read(file).ok())
         .and_then(|bytes| serde_json::from_slice(&bytes).ok())
         .unwrap_or_default()
+}
+
+/// The bindings file as a change must see it. `load_config` reads an unreadable file as empty,
+/// which is right for looking up one binding but would, on a write, erase the user's other
+/// bindings: here a file that exists and cannot be parsed is an error.
+fn read_config_for_update(file: &Path) -> Result<Config, String> {
+    match std::fs::read(file) {
+        Ok(bytes) if bytes.iter().all(u8::is_ascii_whitespace) => Ok(Config::default()),
+        Ok(bytes) => serde_json::from_slice(&bytes).map_err(|error| {
+            format!(
+                "remote-workspaces.json cannot be read ({error}). Fix or remove it, then try again."
+            )
+        }),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Config::default()),
+        Err(error) => Err(format!("remote-workspaces.json cannot be read: {error}")),
+    }
+}
+
+/// Changes the bindings file under a lock, and replaces it atomically, so two windows (or a
+/// setup and a hand edit) cannot lose each other's entries and a crash leaves the old file.
+fn update_config<T>(change: impl FnOnce(&mut Config) -> Result<T, String>) -> Result<T, String> {
+    let file = config_file()?;
+    let folder = file
+        .parent()
+        .ok_or("Oleafly's data folder is missing.")?
+        .to_path_buf();
+    std::fs::create_dir_all(&folder).map_err(|error| error.to_string())?;
+    let lock = std::fs::OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .write(true)
+        .open(file.with_extension("lock"))
+        .map_err(|error| error.to_string())?;
+    fs4::FileExt::lock(&lock).map_err(|error| error.to_string())?;
+    let mut config = read_config_for_update(&file)?;
+    let result = change(&mut config)?;
+    let text = serde_json::to_vec_pretty(&config).map_err(|error| error.to_string())?;
+    let temporary = tempfile::NamedTempFile::new_in(&folder).map_err(|error| error.to_string())?;
+    std::fs::write(temporary.path(), text).map_err(|error| error.to_string())?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(temporary.path(), std::fs::Permissions::from_mode(0o600));
+    }
+    temporary
+        .persist(&file)
+        .map_err(|error| error.error.to_string())?;
+    Ok(result)
 }
 
 fn binding_for(project_id: &str) -> Result<Binding, String> {
@@ -278,12 +330,22 @@ fn announce<R: Runtime>(app: &AppHandle<R>, host: &str, state: &str, detail: &st
 const RECONNECT_DELAYS_SECS: [u64; 8] = [1, 2, 4, 8, 15, 30, 30, 30];
 const RECONNECT_ATTEMPTS: usize = 24;
 
+/// Whether some project is still bound to this host and helper. A binding that was removed (a setup
+/// that failed, a hand edit) must not keep a link coming back.
+fn still_bound(binding: &Binding) -> bool {
+    let key = binding.key();
+    load_config()
+        .projects
+        .values()
+        .any(|other| other.key() == key)
+}
+
 async fn reconnect_loop<R: Runtime>(app: AppHandle<R>, binding: Binding) {
     let Some(bridge) = app.try_state::<RemoteBridge>() else {
         return;
     };
     let key = binding.key();
-    if !lock(&bridge.shared.reconnecting).insert(key.clone()) {
+    if !still_bound(&binding) || !lock(&bridge.shared.reconnecting).insert(key.clone()) {
         return;
     }
     announce(
@@ -296,6 +358,10 @@ async fn reconnect_loop<R: Runtime>(app: AppHandle<R>, binding: Binding) {
     for attempt in 0..RECONNECT_ATTEMPTS {
         let wait = RECONNECT_DELAYS_SECS[attempt.min(RECONNECT_DELAYS_SECS.len() - 1)];
         tokio::time::sleep(std::time::Duration::from_secs(wait)).await;
+        if !still_bound(&binding) {
+            lock(&bridge.shared.reconnecting).remove(&key);
+            return;
+        }
         if connect(&app, &bridge, &binding).await.is_ok() {
             restored = true;
             break;
@@ -388,7 +454,7 @@ async fn connect_inner<R: Runtime>(
     });
 
     let errors = conn.clone();
-    tokio::spawn(async move {
+    let stderr_task = tokio::spawn(async move {
         let mut lines = BufReader::new(stderr).lines();
         while let Ok(Some(line)) = lines.next_line().await {
             if line.starts_with("term: ") {
@@ -502,6 +568,8 @@ async fn connect_inner<R: Runtime>(
             }
         }
         reader.closed.store(true, Ordering::SeqCst);
+        // What ssh said on its way out is part of the answer to whoever is waiting for `ready`.
+        let _ = stderr_task.await;
         let tail = lock(&reader.stderr_tail).trim().to_owned();
         let mut message = format!("The connection to {} closed.", reader.label);
         if !tail.is_empty() {
@@ -512,7 +580,11 @@ async fn connect_inner<R: Runtime>(
         announce(&events, &reader.label, "disconnected", &message);
         let _ = child.wait().await;
         // A host that keeps its daemon between connections can be reached again; one that does not has lost its sessions.
-        if reader.binding.persistent && !reader.user_closed.load(Ordering::SeqCst) {
+        // Only a link that had come up is worth bringing back: one that never said `ready` failed to start the
+        // program (a first connection, or a setup being checked), and retrying it would only repeat the failure.
+        // Taking the sender also ends the wait in `connect` at once, instead of after its 30 seconds.
+        let was_up = lock(&reader.ready).take().is_none();
+        if reader.binding.persistent && was_up && !reader.user_closed.load(Ordering::SeqCst) {
             reconnect_loop(events, reader.binding.clone()).await;
         }
     });

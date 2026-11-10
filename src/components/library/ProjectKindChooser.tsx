@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ChoiceCard } from "@/components/library/ChoiceCard";
 import { CHOICE_ART } from "@/components/library/choice-art";
+import { remoteWorkspacesAvailable } from "@/lib/remote-workspace";
 import {
   Dialog,
   DialogContent,
@@ -9,13 +10,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export type ProjectKind = "research" | "import" | "template";
+export type ProjectKind = "research" | "import" | "template" | "remote";
 
 const KINDS: { id: ProjectKind; thumbnail: string }[] = [
   { id: "research", thumbnail: CHOICE_ART.research },
   { id: "import", thumbnail: CHOICE_ART.import },
   { id: "template", thumbnail: CHOICE_ART.template },
 ];
+
+/** Offered only by a build whose backend can run a project on another computer. */
+const REMOTE_KIND = { id: "remote", thumbnail: CHOICE_ART.remote } as const;
 
 export function ProjectKindChooser({
   open,
@@ -42,7 +46,12 @@ export function ProjectKindChooser({
       title: t(($) => $.library.kinds.template.title),
       description: t(($) => $.library.kinds.template.description),
     },
+    remote: {
+      title: t(($) => $.library.kinds.remote.title),
+      description: t(($) => $.library.kinds.remote.description),
+    },
   };
+  const kinds = remoteWorkspacesAvailable() ? [...KINDS, REMOTE_KIND] : KINDS;
   return (
     <Dialog
       open={open}
@@ -66,8 +75,8 @@ export function ProjectKindChooser({
           <DialogTitle>{t(($) => $.library.kinds.title)}</DialogTitle>
           <DialogDescription>{t(($) => $.library.kinds.description)}</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {KINDS.map((kind) => (
+        <div className={kinds.length > 3 ? "grid gap-3 sm:grid-cols-2" : "grid gap-3 sm:grid-cols-3"}>
+          {kinds.map((kind) => (
             <ChoiceCard
               key={kind.id}
               image={kind.thumbnail}

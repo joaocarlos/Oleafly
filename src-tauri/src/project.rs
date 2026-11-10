@@ -5118,6 +5118,65 @@ pub(crate) fn create_blank_project(name: String) -> Result<String, String> {
     Ok(project_id)
 }
 
+/// The local half of a remote workspace: a library entry that holds only its manifest. The files
+/// live on the host, so nothing else is written here (no `main.tex`, no Git repository), and
+/// removing the binding later leaves an empty project rather than a stray copy.
+#[cfg(feature = "remote-bridge")]
+pub(crate) fn create_remote_stub(name: String) -> Result<String, String> {
+    let engine = engine_for_new_project(&default_main_doc())?;
+    let root = paths::projects_root()?;
+    let reservation = reserve_unique_project_directory(&root, true)?;
+    let dir = reservation.path().to_path_buf();
+    create_project_transaction(reservation, || {
+        write_meta_at(
+            &dir.join("project.json"),
+            &ProjectMeta {
+                dictionary_locale: None,
+                name,
+                main_doc: default_main_doc(),
+                engine,
+                color: String::new(),
+                kind: String::new(),
+                exports: Vec::new(),
+                hidden: false,
+                forked_from: None,
+                tex: None,
+                tex_flavor: None,
+                typst: None,
+                allow_shell_escape: false,
+                checkpoints: oleafly_core::CheckpointPolicy::default(),
+                pdf_sync: None,
+                extra: HashMap::new(),
+            },
+        )
+    })
+}
+
+/// Takes back a stub made by `create_remote_stub` when the setup that wanted it fails. It removes
+/// the folder only while it still holds nothing but the manifest, so a stub that someone has
+/// started to use is left alone.
+#[cfg(feature = "remote-bridge")]
+pub(crate) fn discard_remote_stub(project_id: &str) -> Result<(), String> {
+    paths::validate_project_id(project_id)?;
+    let dir = paths::projects_root()?.join(project_id);
+    let metadata = match std::fs::symlink_metadata(&dir) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(error.to_string()),
+    };
+    if !metadata.is_dir() || metadata.file_type().is_symlink() {
+        return Err("The project folder is not an ordinary folder.".into());
+    }
+    for entry in std::fs::read_dir(&dir).map_err(|error| error.to_string())? {
+        let entry = entry.map_err(|error| error.to_string())?;
+        if entry.file_name() != "project.json" {
+            return Err("The project has files of its own, so it was kept.".into());
+        }
+    }
+    std::fs::remove_dir_all(&dir).map_err(|error| error.to_string())?;
+    crate::project_ids::forget(project_id)
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PdfConversionFigure {

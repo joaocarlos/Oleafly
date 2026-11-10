@@ -4,7 +4,14 @@ const mocks = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
 vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn(async () => () => {}) }));
 
-import { describeRemoteState, initRemoteWorkspaces, remoteTargetFor, routedInvoke } from "./remote-workspace";
+import {
+  describeRemoteState,
+  initRemoteWorkspaces,
+  refreshRemoteWorkspaces,
+  remoteTargetFor,
+  remoteWorkspacesAvailable,
+  routedInvoke,
+} from "./remote-workspace";
 
 const remote = { projectId: "p-remote", host: "example-host", path: "~/work/analysis" };
 
@@ -159,6 +166,55 @@ describe("remote workspace routing", () => {
 
   it("finds no target for an unknown project", () => {
     expect(remoteTargetFor("read_file", { projectId: "nobody" })).toBeNull();
+  });
+});
+
+describe("remote workspaces added while the app runs", () => {
+  const created = { projectId: "p-new", host: "lab", path: "/home/ana/papers" };
+
+  it("knows whether the backend can run a project on another computer", async () => {
+    await bind([]);
+    expect(remoteWorkspacesAvailable()).toBe(true);
+    mocks.invoke.mockReset();
+    mocks.invoke.mockRejectedValueOnce(new Error("Command remote_bindings not found"));
+    await initRemoteWorkspaces();
+    expect(remoteWorkspacesAvailable()).toBe(false);
+  });
+
+  it("sends a new project's calls to its host as soon as the bindings are read again", async () => {
+    await bind([]);
+    await routedInvoke("list_file_tree", { projectId: created.projectId });
+    expect(mocks.invoke).toHaveBeenLastCalledWith("list_file_tree", { projectId: created.projectId });
+
+    mocks.invoke.mockReset();
+    mocks.invoke.mockResolvedValueOnce({ bindings: [created], files });
+    await refreshRemoteWorkspaces();
+    mocks.invoke.mockReset();
+    mocks.invoke.mockResolvedValue("ok");
+    await routedInvoke("list_file_tree", { projectId: created.projectId });
+    expect(mocks.invoke).toHaveBeenCalledWith("remote_call", {
+      projectId: created.projectId,
+      cmd: "list_file_tree",
+      args: { projectId: created.projectId },
+    });
+  });
+
+  it("keeps the bindings it has when reading them again fails", async () => {
+    await bind([remote]);
+    mocks.invoke.mockReset();
+    mocks.invoke.mockRejectedValueOnce(new Error("backend busy"));
+    await refreshRemoteWorkspaces();
+    expect(remoteWorkspacesAvailable()).toBe(true);
+    expect(remoteTargetFor("read_file", { projectId: remote.projectId })).not.toBeNull();
+  });
+
+  it("does nothing when the backend has no remote commands", async () => {
+    mocks.invoke.mockReset();
+    mocks.invoke.mockRejectedValueOnce(new Error("Command remote_bindings not found"));
+    await initRemoteWorkspaces();
+    mocks.invoke.mockReset();
+    await refreshRemoteWorkspaces();
+    expect(mocks.invoke).not.toHaveBeenCalled();
   });
 });
 

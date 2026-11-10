@@ -220,7 +220,72 @@
     "template": {
       "title": "Bruk en mal",
       "description": "Start fra et ferdig oppsett for en tidsskriftartikkel, avhandling, rapport, poster eller et foredrag."
+    },
+    "remote": {
+      "title": "Eksternt arbeidsområde",
+      "description": "Arbeid i en mappe på en annen datamaskin. Filene, terminalen, agentene, Git og LaTeX-byggingen kjører der."
     }
+  },
+  "remote": {
+    "description": "Prosjektet blir på en annen datamaskin. Oleafly kobler til med dine egne SSH-nøkler og kjører terminal, agenter, filer, Git og LaTeX-bygging der.",
+    "host": {
+      "title": "Hvilken datamaskin?",
+      "known": "Fra SSH-oppsettet ditt",
+      "hostLabel": "Vert",
+      "userLabel": "Bruker (valgfritt)",
+      "portLabel": "Port (valgfritt)",
+      "hint": "Oleafly logger inn med SSH-nøklene eller agenten din og ber aldri om passord. Hvis ssh til denne verten fungerer i en terminal uten spørsmål, fungerer det også her.",
+      "connect": "Koble til"
+    },
+    "checking": "Kobler til {{host}}…",
+    "failed": {
+      "title": "Kunne ikke sette opp {{host}}",
+      "auth": "{{host}} godtok ikke SSH-nøklene dine. Sjekk at du kan bruke ssh fra en terminal uten å bli bedt om passord, og at nøkkelen er lastet inn i SSH-agenten.",
+      "network": "Oleafly kunne ikke nå {{host}}. Sjekk navnet, porten og nettverket eller VPN-et ditt.",
+      "ssh": "OpenSSH er ikke installert på denne datamaskinen. Installer det og prøv igjen."
+    },
+    "helper": {
+      "title": "Oleafly på {{host}}",
+      "system": "System: {{system}}",
+      "latexmk": "LaTeX-bygging (latexmk): {{status}}",
+      "git": "Git: {{status}}",
+      "found": "funnet",
+      "notFound": "ikke funnet",
+      "installed": "Oleafly-hjelperen ({{version}}) er installert på {{host}}.",
+      "installBody": "Oleafly kopierer et lite program, hjelperen, til {{dir}} på {{host}} over SSH-forbindelsen din. Den kontrolleres mot SHA-256 før den settes på plass, og kjører terminal, agenter og bygging på den datamaskinen. Ingenting utenfor ~/.oleafly røres, og sletter du mappen, fjernes den.",
+      "size": "Størrelse: {{size}}",
+      "install": "Installer på {{host}}",
+      "checking": "Sjekker {{host}}…",
+      "copying": "Kopierer hjelperen: {{sent}} av {{total}}",
+      "verifying": "Kontrollerer kopien…",
+      "stop": "Stopp",
+      "libsTitle": "Biblioteker hjelperen trenger, mangler",
+      "libsBody": "{{host}} mangler {{libs}}, og hjelperen starter først når de er installert. På Ubuntu eller Debian kjører du kommandoen under på verten og sjekker på nytt.",
+      "libsCheck": "Sjekk på nytt",
+      "continue": "Fortsett"
+    },
+    "folder": {
+      "title": "Hvilken mappe?",
+      "body": "Velg mappen på {{host}} som inneholder prosjektet, eller opprett en.",
+      "pathLabel": "Mappe på verten",
+      "up": "Ett nivå opp",
+      "empty": "Ingen mapper her.",
+      "items": "Elementer i denne mappen: {{count}}",
+      "hasTex": "Har LaTeX-filer",
+      "hasGit": "Er et Git-depot",
+      "notWritable": "Du kan ikke skrive til denne mappen på verten.",
+      "tooBroad": "Velg en mappe inne i {{home}}. En hel hjemmemappe eller disk er for bred for et prosjekt.",
+      "missing": "Denne mappen finnes ikke på verten.",
+      "createMissing": "Opprett den",
+      "denied": "Verten lot deg ikke åpne denne mappen.",
+      "newFolder": "Ny mappe",
+      "newFolderPlaceholder": "Mappenavn",
+      "createFolder": "Opprett",
+      "nameLabel": "Prosjektnavn",
+      "create": "Opprett prosjekt"
+    },
+    "creating": "Kobler til {{host}} og åpner mappen…",
+    "createFailed": "Kunne ikke opprette prosjektet."
   },
   "import": {
     "title": "Importer et prosjekt",

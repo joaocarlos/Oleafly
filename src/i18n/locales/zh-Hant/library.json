@@ -215,7 +215,72 @@
     "template": {
       "title": "使用範本",
       "description": "從期刊論文、學位論文、報告、海報或演講的現成版面開始。"
+    },
+    "remote": {
+      "title": "遠端工作區",
+      "description": "在另一台電腦上的資料夾中工作。它的檔案、終端機、代理程式、Git 和 LaTeX 建置都在那裡執行。"
     }
+  },
+  "remote": {
+    "description": "專案保留在另一台電腦上。Oleafly 使用你自己的 SSH 金鑰連線，並在那裡執行終端機、代理、檔案、Git 和 LaTeX 建置。",
+    "host": {
+      "title": "哪一台電腦？",
+      "known": "來自你的 SSH 設定",
+      "hostLabel": "主機",
+      "userLabel": "使用者（選填）",
+      "portLabel": "連接埠（選填）",
+      "hint": "Oleafly 使用你的 SSH 金鑰或代理登入，從不詢問密碼。如果連到這台主機的 ssh 在終端機中不需提示即可使用，在這裡也可以。",
+      "connect": "連線"
+    },
+    "checking": "正在連線到 {{host}}…",
+    "failed": {
+      "title": "無法設定 {{host}}",
+      "auth": "{{host}} 沒有接受你的 SSH 金鑰。請確認你可以在終端機中不需輸入密碼就用 ssh 連線，且金鑰已載入 SSH 代理。",
+      "network": "Oleafly 無法連線到 {{host}}。請檢查名稱、連接埠，以及你的網路或 VPN。",
+      "ssh": "這台電腦上沒有安裝 OpenSSH。請安裝後再試一次。"
+    },
+    "helper": {
+      "title": "{{host}} 上的 Oleafly",
+      "system": "系統：{{system}}",
+      "latexmk": "LaTeX 建置（latexmk）：{{status}}",
+      "git": "Git：{{status}}",
+      "found": "已找到",
+      "notFound": "找不到",
+      "installed": "Oleafly 輔助程式（{{version}}）已安裝在 {{host}} 上。",
+      "installBody": "Oleafly 會透過你的 SSH 連線，將一個小程式（輔助程式）複製到 {{host}} 上的 {{dir}}。放置到定位之前會以 SHA-256 驗證，它會在那台電腦上執行終端機、代理和建置。不會更動 ~/.oleafly 以外的任何內容，刪除該資料夾即可移除。",
+      "size": "大小：{{size}}",
+      "install": "安裝到 {{host}}",
+      "checking": "正在檢查 {{host}}…",
+      "copying": "正在複製輔助程式：{{sent}} / {{total}}",
+      "verifying": "正在驗證副本…",
+      "stop": "停止",
+      "libsTitle": "缺少輔助程式所需的程式庫",
+      "libsBody": "{{host}} 缺少 {{libs}}，安裝後輔助程式才會啟動。在 Ubuntu 或 Debian 上，請在主機上執行下方的指令，然後重新檢查。",
+      "libsCheck": "重新檢查",
+      "continue": "繼續"
+    },
+    "folder": {
+      "title": "哪個資料夾？",
+      "body": "選擇 {{host}} 上包含專案的資料夾，或建立一個新資料夾。",
+      "pathLabel": "主機上的資料夾",
+      "up": "上一層",
+      "empty": "這裡沒有資料夾。",
+      "items": "此資料夾中的項目數：{{count}}",
+      "hasTex": "包含 LaTeX 檔案",
+      "hasGit": "是 Git 儲存庫",
+      "notWritable": "你無法寫入主機上的這個資料夾。",
+      "tooBroad": "請選擇 {{home}} 內的資料夾。整個主資料夾或整個磁碟對專案來說範圍太大。",
+      "missing": "主機上不存在此資料夾。",
+      "createMissing": "建立它",
+      "denied": "主機不允許你開啟此資料夾。",
+      "newFolder": "新增資料夾",
+      "newFolderPlaceholder": "資料夾名稱",
+      "createFolder": "建立",
+      "nameLabel": "專案名稱",
+      "create": "建立專案"
+    },
+    "creating": "正在連線到 {{host}} 並開啟資料夾…",
+    "createFailed": "無法建立專案。"
   },
   "import": {
     "title": "匯入專案",

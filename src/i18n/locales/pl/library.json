@@ -230,7 +230,72 @@
     "template": {
       "title": "Użyj szablonu",
       "description": "Zacznij od gotowego układu artykułu do czasopisma, pracy dyplomowej, raportu, plakatu lub wystąpienia."
+    },
+    "remote": {
+      "title": "Zdalny obszar roboczy",
+      "description": "Pracuj w folderze, który znajduje się na innym komputerze. Jego pliki, terminal, agenci, Git i kompilacja LaTeX działają tam."
     }
+  },
+  "remote": {
+    "description": "Projekt zostaje na innym komputerze. Oleafly łączy się za pomocą Twoich kluczy SSH i uruchamia tam terminal, agentów, pliki, Git oraz kompilację LaTeX.",
+    "host": {
+      "title": "Który komputer?",
+      "known": "Z Twojej konfiguracji SSH",
+      "hostLabel": "Host",
+      "userLabel": "Użytkownik (opcjonalnie)",
+      "portLabel": "Port (opcjonalnie)",
+      "hint": "Oleafly loguje się Twoimi kluczami SSH lub agentem i nigdy nie prosi o hasło. Jeśli ssh do tego hosta działa w terminalu bez pytań, zadziała też tutaj.",
+      "connect": "Połącz"
+    },
+    "checking": "Łączenie z {{host}}…",
+    "failed": {
+      "title": "Nie udało się skonfigurować {{host}}",
+      "auth": "{{host}} nie przyjął Twoich kluczy SSH. Sprawdź, czy możesz użyć ssh w terminalu bez pytania o hasło i czy klucz jest załadowany w agencie SSH.",
+      "network": "Oleafly nie mógł połączyć się z {{host}}. Sprawdź nazwę, port oraz sieć lub VPN.",
+      "ssh": "OpenSSH nie jest zainstalowany na tym komputerze. Zainstaluj go i spróbuj ponownie."
+    },
+    "helper": {
+      "title": "Oleafly na {{host}}",
+      "system": "System: {{system}}",
+      "latexmk": "Kompilacja LaTeX (latexmk): {{status}}",
+      "git": "Git: {{status}}",
+      "found": "znaleziono",
+      "notFound": "nie znaleziono",
+      "installed": "Pomocnik Oleafly ({{version}}) jest zainstalowany na {{host}}.",
+      "installBody": "Oleafly skopiuje mały program, pomocnika, do {{dir}} na {{host}} przez Twoje połączenie SSH. Przed umieszczeniem zostanie sprawdzony przez SHA-256 i uruchamia tam terminal, agentów oraz kompilacje. Nic poza ~/.oleafly nie jest zmieniane, a usunięcie tego folderu usuwa pomocnika.",
+      "size": "Rozmiar: {{size}}",
+      "install": "Zainstaluj na {{host}}",
+      "checking": "Sprawdzanie {{host}}…",
+      "copying": "Kopiowanie pomocnika: {{sent}} z {{total}}",
+      "verifying": "Weryfikowanie kopii…",
+      "stop": "Zatrzymaj",
+      "libsTitle": "Brakuje bibliotek potrzebnych pomocnikowi",
+      "libsBody": "Na {{host}} brakuje {{libs}}, a pomocnik uruchomi się dopiero po ich zainstalowaniu. W Ubuntu lub Debianie uruchom poniższe polecenie na hoście, a potem sprawdź ponownie.",
+      "libsCheck": "Sprawdź ponownie",
+      "continue": "Dalej"
+    },
+    "folder": {
+      "title": "Który folder?",
+      "body": "Wybierz folder na {{host}}, w którym jest projekt, albo utwórz nowy.",
+      "pathLabel": "Folder na hoście",
+      "up": "Poziom wyżej",
+      "empty": "Brak folderów.",
+      "items": "Elementy w tym folderze: {{count}}",
+      "hasTex": "Zawiera pliki LaTeX",
+      "hasGit": "To repozytorium Git",
+      "notWritable": "Nie możesz zapisywać w tym folderze na hoście.",
+      "tooBroad": "Wybierz folder wewnątrz {{home}}. Cały folder domowy lub dysk jest dla projektu zbyt szeroki.",
+      "missing": "Ten folder nie istnieje na hoście.",
+      "createMissing": "Utwórz go",
+      "denied": "Host nie pozwolił otworzyć tego folderu.",
+      "newFolder": "Nowy folder",
+      "newFolderPlaceholder": "Nazwa folderu",
+      "createFolder": "Utwórz",
+      "nameLabel": "Nazwa projektu",
+      "create": "Utwórz projekt"
+    },
+    "creating": "Łączenie z {{host}} i otwieranie folderu…",
+    "createFailed": "Nie udało się utworzyć projektu."
   },
   "import": {
     "title": "Importuj projekt",

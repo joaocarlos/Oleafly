@@ -220,7 +220,72 @@
     "template": {
       "title": "Şablon kullan",
       "description": "Dergi makalesi, tez, rapor, poster veya sunum için hazırlanmış bir düzenden başlayın."
+    },
+    "remote": {
+      "title": "Uzak çalışma alanı",
+      "description": "Başka bir bilgisayardaki bir klasörde çalışın. Dosyaları, terminali, ajanları, Git ve LaTeX derlemesi orada çalışır."
     }
+  },
+  "remote": {
+    "description": "Proje başka bir bilgisayarda kalır. Oleafly kendi SSH anahtarlarınızla bağlanır ve terminali, ajanları, dosyaları, Git ve LaTeX derlemesini orada çalıştırır.",
+    "host": {
+      "title": "Hangi bilgisayar?",
+      "known": "SSH yapılandırmanızdan",
+      "hostLabel": "Sunucu",
+      "userLabel": "Kullanıcı (isteğe bağlı)",
+      "portLabel": "Bağlantı noktası (isteğe bağlı)",
+      "hint": "Oleafly SSH anahtarlarınız veya aracınızla oturum açar ve hiçbir zaman parola istemez. Bu sunucuya ssh bir terminalde soru sormadan çalışıyorsa burada da çalışır.",
+      "connect": "Bağlan"
+    },
+    "checking": "{{host}} sunucusuna bağlanılıyor…",
+    "failed": {
+      "title": "{{host}} kurulamadı",
+      "auth": "{{host}} SSH anahtarlarınızı kabul etmedi. Bir terminalden parola sorulmadan ssh ile bağlanabildiğinizi ve anahtarınızın SSH aracına yüklü olduğunu kontrol edin.",
+      "network": "Oleafly {{host}} sunucusuna ulaşamadı. Adı, bağlantı noktasını ve ağınızı ya da VPN'inizi kontrol edin.",
+      "ssh": "OpenSSH bu bilgisayarda kurulu değil. Kurun ve yeniden deneyin."
+    },
+    "helper": {
+      "title": "{{host}} üzerinde Oleafly",
+      "system": "Sistem: {{system}}",
+      "latexmk": "LaTeX derlemesi (latexmk): {{status}}",
+      "git": "Git: {{status}}",
+      "found": "bulundu",
+      "notFound": "bulunamadı",
+      "installed": "Oleafly yardımcısı ({{version}}) {{host}} üzerinde kurulu.",
+      "installBody": "Oleafly, SSH bağlantınız üzerinden {{host}} üzerindeki {{dir}} klasörüne küçük bir program olan yardımcıyı kopyalayacak. Yerine konmadan önce SHA-256 ile doğrulanır ve terminali, ajanları ve derlemeleri o bilgisayarda çalıştırır. ~/.oleafly dışında hiçbir şeye dokunulmaz ve bu klasörü silmek yardımcıyı kaldırır.",
+      "size": "Boyut: {{size}}",
+      "install": "{{host}} üzerine kur",
+      "checking": "{{host}} denetleniyor…",
+      "copying": "Yardımcı kopyalanıyor: {{sent}} / {{total}}",
+      "verifying": "Kopya doğrulanıyor…",
+      "stop": "Durdur",
+      "libsTitle": "Yardımcının gereksindiği kitaplıklar eksik",
+      "libsBody": "{{host}} üzerinde {{libs}} eksik ve yardımcı ancak bunlar kurulunca başlar. Ubuntu veya Debian'da aşağıdaki komutu sunucuda çalıştırın, sonra yeniden denetleyin.",
+      "libsCheck": "Yeniden denetle",
+      "continue": "Devam"
+    },
+    "folder": {
+      "title": "Hangi klasör?",
+      "body": "{{host}} üzerinde projeyi içeren klasörü seçin ya da yeni bir tane oluşturun.",
+      "pathLabel": "Sunucudaki klasör",
+      "up": "Bir üst düzey",
+      "empty": "Burada klasör yok.",
+      "items": "Bu klasördeki öğeler: {{count}}",
+      "hasTex": "LaTeX dosyaları içeriyor",
+      "hasGit": "Bir Git deposu",
+      "notWritable": "Sunucudaki bu klasöre yazamazsınız.",
+      "tooBroad": "{{home}} içinde bir klasör seçin. Tüm ev klasörü ya da bir disk, bir proje için çok geniştir.",
+      "missing": "Bu klasör sunucuda yok.",
+      "createMissing": "Oluştur",
+      "denied": "Sunucu bu klasörü açmanıza izin vermedi.",
+      "newFolder": "Yeni klasör",
+      "newFolderPlaceholder": "Klasör adı",
+      "createFolder": "Oluştur",
+      "nameLabel": "Proje adı",
+      "create": "Proje oluştur"
+    },
+    "creating": "{{host}} sunucusuna bağlanılıyor ve klasör açılıyor…",
+    "createFailed": "Proje oluşturulamadı."
   },
   "import": {
     "title": "Proje içe aktar",

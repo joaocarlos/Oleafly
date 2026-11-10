@@ -1,8 +1,16 @@
 // @vitest-environment jsdom
 
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const remote = vi.hoisted(() => ({ available: vi.fn(() => false) }));
+vi.mock("@/lib/remote-workspace", () => ({ remoteWorkspacesAvailable: remote.available }));
+
 import { ProjectKindChooser } from "./ProjectKindChooser";
+
+beforeEach(() => {
+  remote.available.mockReturnValue(false);
+});
 
 describe("ProjectKindChooser", () => {
   it("offers the three starting points with a thumbnail each and reports the choice", () => {
@@ -28,6 +36,28 @@ describe("ProjectKindChooser", () => {
     expect(onChoose).toHaveBeenLastCalledWith("import");
     fireEvent.click(screen.getByTestId("project-kind-template"));
     expect(onChoose).toHaveBeenLastCalledWith("template");
+  });
+
+  it("offers no remote workspace in a build that cannot run one", () => {
+    render(<ProjectKindChooser open onClose={vi.fn()} onChoose={vi.fn()} />);
+    expect(screen.queryByTestId("project-kind-remote")).not.toBeInTheDocument();
+    expect(screen.getAllByTestId(/^project-kind-(research|import|template)$/)).toHaveLength(3);
+  });
+
+  it("adds a remote workspace as a fourth starting point when the build can run one", () => {
+    remote.available.mockReturnValue(true);
+    const onChoose = vi.fn();
+    render(<ProjectKindChooser open onClose={vi.fn()} onChoose={onChoose} />);
+
+    const card = screen.getByTestId("project-kind-remote");
+    expect(card).toHaveTextContent("Remote workspace");
+    expect(card.querySelector("img")).toHaveAttribute("src", expect.stringContaining(".webp"));
+    expect(card).toHaveAccessibleDescription(/another computer/);
+    for (const id of ["research", "import", "template"]) {
+      expect(screen.getByTestId(`project-kind-${id}`)).toBeInTheDocument();
+    }
+    fireEvent.click(card);
+    expect(onChoose).toHaveBeenCalledExactlyOnceWith("remote");
   });
 
   it("closes on escape, and refuses to while closing is held back", () => {

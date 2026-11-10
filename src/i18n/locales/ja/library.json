@@ -215,7 +215,72 @@
     "template": {
       "title": "テンプレートを使う",
       "description": "論文誌の記事、学位論文、レポート、ポスター、発表用に用意されたレイアウトから始めます。"
+    },
+    "remote": {
+      "title": "リモートワークスペース",
+      "description": "別のコンピュータにあるフォルダで作業します。ファイル、ターミナル、エージェント、Git、LaTeX のビルドはそのコンピュータで実行されます。"
     }
+  },
+  "remote": {
+    "description": "プロジェクトは別のコンピュータに残ります。Oleafly はあなたの SSH 鍵で接続し、ターミナル、エージェント、ファイル、Git、LaTeX のビルドをそこで実行します。",
+    "host": {
+      "title": "どのコンピュータですか？",
+      "known": "SSH 設定から",
+      "hostLabel": "ホスト",
+      "userLabel": "ユーザー（任意）",
+      "portLabel": "ポート（任意）",
+      "hint": "Oleafly は SSH 鍵またはエージェントでサインインし、パスワードは決して求めません。このホストへの ssh がターミナルで確認なしに動くなら、ここでも動きます。",
+      "connect": "接続"
+    },
+    "checking": "{{host}} に接続しています…",
+    "failed": {
+      "title": "{{host}} をセットアップできませんでした",
+      "auth": "{{host}} はあなたの SSH 鍵を受け付けませんでした。ターミナルからパスワードを求められずに ssh で接続できること、鍵が SSH エージェントに読み込まれていることを確認してください。",
+      "network": "Oleafly は {{host}} に到達できませんでした。名前、ポート、ネットワークまたは VPN を確認してください。",
+      "ssh": "このコンピュータに OpenSSH がインストールされていません。インストールしてからもう一度お試しください。"
+    },
+    "helper": {
+      "title": "{{host}} 上の Oleafly",
+      "system": "システム：{{system}}",
+      "latexmk": "LaTeX のビルド（latexmk）：{{status}}",
+      "git": "Git：{{status}}",
+      "found": "見つかりました",
+      "notFound": "見つかりません",
+      "installed": "Oleafly ヘルパー（{{version}}）は {{host}} にインストール済みです。",
+      "installBody": "Oleafly は SSH 接続を通じて、小さなプログラムであるヘルパーを {{host}} の {{dir}} にコピーします。配置する前に SHA-256 で検証され、ターミナル、エージェント、ビルドをそのコンピュータで実行します。~/.oleafly の外には何も触れず、そのフォルダを削除すれば取り除けます。",
+      "size": "サイズ：{{size}}",
+      "install": "{{host}} にインストール",
+      "checking": "{{host}} を確認しています…",
+      "copying": "ヘルパーをコピーしています：{{sent}} / {{total}}",
+      "verifying": "コピーを検証しています…",
+      "stop": "停止",
+      "libsTitle": "ヘルパーに必要なライブラリがありません",
+      "libsBody": "{{host}} に {{libs}} がなく、ヘルパーはそれらをインストールしてから起動します。Ubuntu または Debian では、ホストで次のコマンドを実行してから、もう一度確認してください。",
+      "libsCheck": "もう一度確認",
+      "continue": "続ける"
+    },
+    "folder": {
+      "title": "どのフォルダですか？",
+      "body": "{{host}} にあるプロジェクトのフォルダを選ぶか、新しく作成してください。",
+      "pathLabel": "ホスト上のフォルダ",
+      "up": "1 つ上へ",
+      "empty": "フォルダがありません。",
+      "items": "このフォルダの項目数：{{count}}",
+      "hasTex": "LaTeX ファイルがあります",
+      "hasGit": "Git リポジトリです",
+      "notWritable": "ホスト上のこのフォルダには書き込めません。",
+      "tooBroad": "{{home}} の中のフォルダを選んでください。ホームフォルダ全体やディスク全体はプロジェクトには広すぎます。",
+      "missing": "このフォルダはホストにありません。",
+      "createMissing": "作成する",
+      "denied": "ホストはこのフォルダを開くことを許可しませんでした。",
+      "newFolder": "新しいフォルダ",
+      "newFolderPlaceholder": "フォルダ名",
+      "createFolder": "作成",
+      "nameLabel": "プロジェクト名",
+      "create": "プロジェクトを作成"
+    },
+    "creating": "{{host}} に接続してフォルダを開いています…",
+    "createFailed": "プロジェクトを作成できませんでした。"
   },
   "import": {
     "title": "プロジェクトを読み込む",

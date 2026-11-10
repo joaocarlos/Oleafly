@@ -438,6 +438,11 @@ pub fn run_serve() -> Result<(), String> {
     )
 }
 
+/// The line `oleafly-remoted --version` prints, without starting anything.
+pub fn version_line() -> String {
+    crate::remote_commands::daemon_version_line()
+}
+
 pub fn run_attach() -> Result<(), String> {
     crate::remote_hub::attach()
 }

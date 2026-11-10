@@ -220,7 +220,72 @@
     "template": {
       "title": "Käytä mallipohjaa",
       "description": "Aloita valmiista taitosta: lehtiartikkeli, opinnäyte, raportti, posteri tai esitys."
+    },
+    "remote": {
+      "title": "Etätyötila",
+      "description": "Työskentele kansiossa, joka on toisella tietokoneella. Sen tiedostot, pääte, agentit, Git ja LaTeX-käännös toimivat siellä."
     }
+  },
+  "remote": {
+    "description": "Projekti pysyy toisella tietokoneella. Oleafly yhdistää omilla SSH-avaimillasi ja ajaa päätteen, agentit, tiedostot, Gitin ja LaTeX-käännöksen siellä.",
+    "host": {
+      "title": "Mikä tietokone?",
+      "known": "SSH-asetuksistasi",
+      "hostLabel": "Isäntä",
+      "userLabel": "Käyttäjä (valinnainen)",
+      "portLabel": "Portti (valinnainen)",
+      "hint": "Oleafly kirjautuu SSH-avaimillasi tai agentillasi eikä koskaan kysy salasanaa. Jos ssh tähän isäntään toimii päätteessä ilman kyselyä, se toimii myös täällä.",
+      "connect": "Yhdistä"
+    },
+    "checking": "Yhdistetään isäntään {{host}}…",
+    "failed": {
+      "title": "Isännän {{host}} käyttöönotto ei onnistunut",
+      "auth": "{{host}} ei hyväksynyt SSH-avaimiasi. Tarkista, että voit käyttää ssh:ta päätteestä ilman salasanakyselyä ja että avaimesi on ladattu SSH-agenttiin.",
+      "network": "Oleafly ei tavoittanut isäntää {{host}}. Tarkista nimi, portti sekä verkkosi tai VPN.",
+      "ssh": "OpenSSH ei ole asennettu tälle tietokoneelle. Asenna se ja yritä uudelleen."
+    },
+    "helper": {
+      "title": "Oleafly isännällä {{host}}",
+      "system": "Järjestelmä: {{system}}",
+      "latexmk": "LaTeX-käännös (latexmk): {{status}}",
+      "git": "Git: {{status}}",
+      "found": "löytyy",
+      "notFound": "ei löydy",
+      "installed": "Oleaflyn apuohjelma ({{version}}) on asennettu isännälle {{host}}.",
+      "installBody": "Oleafly kopioi pienen ohjelman, apuohjelman, kohteeseen {{dir}} isännällä {{host}} SSH-yhteytesi kautta. Se tarkistetaan SHA-256-tiivisteellä ennen käyttöönottoa, ja se ajaa päätteen, agentit ja käännökset sillä tietokoneella. Mitään ~/.oleafly-kansion ulkopuolella ei muuteta, ja kansion poistaminen poistaa apuohjelman.",
+      "size": "Koko: {{size}}",
+      "install": "Asenna isännälle {{host}}",
+      "checking": "Tarkistetaan {{host}}…",
+      "copying": "Kopioidaan apuohjelmaa: {{sent}} / {{total}}",
+      "verifying": "Tarkistetaan kopio…",
+      "stop": "Pysäytä",
+      "libsTitle": "Apuohjelman tarvitsemat kirjastot puuttuvat",
+      "libsBody": "Isännältä {{host}} puuttuu {{libs}}, ja apuohjelma käynnistyy vasta, kun ne on asennettu. Aja Ubuntussa tai Debianissa alla oleva komento isännällä ja tarkista sitten uudelleen.",
+      "libsCheck": "Tarkista uudelleen",
+      "continue": "Jatka"
+    },
+    "folder": {
+      "title": "Mikä kansio?",
+      "body": "Valitse isännän {{host}} kansio, jossa projekti on, tai luo uusi.",
+      "pathLabel": "Kansio isännällä",
+      "up": "Yksi taso ylös",
+      "empty": "Ei kansioita.",
+      "items": "Kohteita tässä kansiossa: {{count}}",
+      "hasTex": "Sisältää LaTeX-tiedostoja",
+      "hasGit": "On Git-tietovarasto",
+      "notWritable": "Et voi kirjoittaa tähän kansioon isännällä.",
+      "tooBroad": "Valitse kansio hakemiston {{home}} sisältä. Koko kotikansio tai levy on projektille liian laaja.",
+      "missing": "Tätä kansiota ei ole isännällä.",
+      "createMissing": "Luo se",
+      "denied": "Isäntä ei antanut avata tätä kansiota.",
+      "newFolder": "Uusi kansio",
+      "newFolderPlaceholder": "Kansion nimi",
+      "createFolder": "Luo",
+      "nameLabel": "Projektin nimi",
+      "create": "Luo projekti"
+    },
+    "creating": "Yhdistetään isäntään {{host}} ja avataan kansio…",
+    "createFailed": "Projektia ei voitu luoda."
   },
   "import": {
     "title": "Tuo projekti",

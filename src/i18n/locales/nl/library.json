@@ -220,7 +220,72 @@
     "template": {
       "title": "Een sjabloon gebruiken",
       "description": "Begin met een kant-en-klare indeling voor een tijdschriftartikel, scriptie, rapport, poster of lezing."
+    },
+    "remote": {
+      "title": "Werkruimte op afstand",
+      "description": "Werk in een map die op een andere computer staat. De bestanden, terminal, agents, Git en LaTeX-build draaien daar."
     }
+  },
+  "remote": {
+    "description": "Het project blijft op een andere computer. Oleafly verbindt met je eigen SSH-sleutels en draait daar de terminal, agents, bestanden, Git en LaTeX-build.",
+    "host": {
+      "title": "Welke computer?",
+      "known": "Uit je SSH-configuratie",
+      "hostLabel": "Host",
+      "userLabel": "Gebruiker (optioneel)",
+      "portLabel": "Poort (optioneel)",
+      "hint": "Oleafly meldt zich aan met je SSH-sleutels of agent en vraagt nooit om een wachtwoord. Werkt ssh naar deze host in een terminal zonder vraag, dan werkt het ook hier.",
+      "connect": "Verbinden"
+    },
+    "checking": "Verbinden met {{host}}…",
+    "failed": {
+      "title": "{{host}} kon niet worden ingesteld",
+      "auth": "{{host}} accepteerde je SSH-sleutels niet. Controleer of je vanuit een terminal met ssh kunt verbinden zonder wachtwoordvraag en of je sleutel in de SSH-agent is geladen.",
+      "network": "Oleafly kon {{host}} niet bereiken. Controleer de naam, de poort en je netwerk of vpn.",
+      "ssh": "OpenSSH is niet geïnstalleerd op deze computer. Installeer het en probeer het opnieuw."
+    },
+    "helper": {
+      "title": "Oleafly op {{host}}",
+      "system": "Systeem: {{system}}",
+      "latexmk": "LaTeX-build (latexmk): {{status}}",
+      "git": "Git: {{status}}",
+      "found": "gevonden",
+      "notFound": "niet gevonden",
+      "installed": "De Oleafly-helper ({{version}}) is geïnstalleerd op {{host}}.",
+      "installBody": "Oleafly kopieert een klein programma, de helper, naar {{dir}} op {{host}} via je SSH-verbinding. Het wordt vóór het plaatsen gecontroleerd met de SHA-256 en draait de terminal, agents en builds op die computer. Er wordt niets buiten ~/.oleafly aangeraakt, en als je die map verwijdert, is de helper weg.",
+      "size": "Grootte: {{size}}",
+      "install": "Installeren op {{host}}",
+      "checking": "{{host}} controleren…",
+      "copying": "De helper kopiëren: {{sent}} van {{total}}",
+      "verifying": "De kopie controleren…",
+      "stop": "Stoppen",
+      "libsTitle": "Bibliotheken die de helper nodig heeft ontbreken",
+      "libsBody": "Op {{host}} ontbreekt {{libs}}, en de helper start pas als ze zijn geïnstalleerd. Voer op Ubuntu of Debian de onderstaande opdracht uit op de host en controleer daarna opnieuw.",
+      "libsCheck": "Opnieuw controleren",
+      "continue": "Doorgaan"
+    },
+    "folder": {
+      "title": "Welke map?",
+      "body": "Kies de map op {{host}} die het project bevat, of maak er een.",
+      "pathLabel": "Map op de host",
+      "up": "Een niveau omhoog",
+      "empty": "Geen mappen hier.",
+      "items": "Items in deze map: {{count}}",
+      "hasTex": "Bevat LaTeX-bestanden",
+      "hasGit": "Is een Git-repository",
+      "notWritable": "Je kunt niet schrijven in deze map op de host.",
+      "tooBroad": "Kies een map binnen {{home}}. Een hele thuismap of schijf is te breed voor een project.",
+      "missing": "Deze map bestaat niet op de host.",
+      "createMissing": "Aanmaken",
+      "denied": "De host liet je deze map niet openen.",
+      "newFolder": "Nieuwe map",
+      "newFolderPlaceholder": "Mapnaam",
+      "createFolder": "Aanmaken",
+      "nameLabel": "Projectnaam",
+      "create": "Project aanmaken"
+    },
+    "creating": "Verbinden met {{host}} en de map openen…",
+    "createFailed": "Het project kon niet worden aangemaakt."
   },
   "import": {
     "title": "Een project importeren",

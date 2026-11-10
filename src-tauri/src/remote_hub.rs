@@ -220,8 +220,17 @@ fn write_line(writer: &mut Box<dyn Write + Send>, value: &Value) -> std::io::Res
 
 // ---- files -------------------------------------------------------------------------------
 
+/// A file in the daemon's data folder, which is created (private to the user) if it is not there:
+/// a host set up by the app has never had one, and the lock is the first file the daemon opens.
 fn data_file(name: &str) -> Result<PathBuf, String> {
-    Ok(crate::paths::oleafly_root()?.join(name))
+    use std::os::unix::fs::DirBuilderExt;
+    let root = crate::paths::oleafly_root()?;
+    std::fs::DirBuilder::new()
+        .recursive(true)
+        .mode(0o700)
+        .create(&root)
+        .map_err(|e| format!("{}: {e}", root.display()))?;
+    Ok(root.join(name))
 }
 
 fn socket_path() -> Result<PathBuf, String> {
@@ -536,6 +545,27 @@ pub fn stop() -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_data_folder_is_created_on_first_use_and_private() {
+        use std::os::unix::fs::PermissionsExt;
+        let _guard = crate::paths::data_dir_env_lock();
+        let base = tempfile::tempdir().unwrap();
+        let data = base.path().join("not").join("yet").join("there");
+        std::env::set_var("OLEAFLY_DATA_DIR", &data);
+        let lock = data_file("remoted.lock").unwrap();
+        std::env::remove_var("OLEAFLY_DATA_DIR");
+        assert_eq!(lock, data.join("remoted.lock"));
+        assert!(data.is_dir());
+        assert_eq!(
+            std::fs::metadata(&data).unwrap().permissions().mode() & 0o777,
+            0o700
+        );
+        // Asking again, with the folder there, is fine.
+        std::env::set_var("OLEAFLY_DATA_DIR", &data);
+        assert!(data_file("remoted.sock").is_ok());
+        std::env::remove_var("OLEAFLY_DATA_DIR");
+    }
 
     /// A client whose lines can be read back.
     #[derive(Clone, Default)]

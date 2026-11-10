@@ -18,6 +18,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useRowWindow } from "@/hooks/use-row-window";
 import { useSettingsStore } from "@/store/settings";
 import { ProjectImportDialog } from "@/components/library/ProjectImportDialog";
+import { RemoteProjectDialog } from "@/components/library/remote/RemoteProjectDialog";
 import { ProjectKindChooser, type ProjectKind } from "@/components/library/ProjectKindChooser";
 import {
   Select,
@@ -194,6 +195,15 @@ export function NewProjectDialog(props: Readonly<{
           await useFilesStore.getState().openProject(projectId);
           // Opening swaps Home for the workspace, which remounts this flow
           // hidden; it has to close now or New project stays "open" and dead.
+          props.onProjectOpened?.();
+        }}
+      />
+      <RemoteProjectDialog
+        open={flowOpen && activeKind === "remote"}
+        onClose={props.onClose}
+        onCreated={async (projectId) => {
+          await useFilesStore.getState().refreshProjects();
+          await useFilesStore.getState().openProject(projectId);
           props.onProjectOpened?.();
         }}
       />

@@ -285,3 +285,59 @@ user's plan until the idle exit. `acp:resync` did not fire in the host test beca
 Real app, dropped link (macOS dev app, `remote-demo` with `"persistent": true`): with a counting loop running in the app's terminal (`for i in $(seq 1 40); do echo $i; sleep 1; done`), the app's ssh
 child was killed at 18:14:10. A new ssh appeared about a second later, the host's daemon kept the same pid (321105) and the terminal's shell (pid 321208) kept starting its `sleep 1`
 without a break; the user reported the count continued without skipping a number. Not recorded from the UI: the exact wording of the notices, input typed during the gap.
+
+## Setting a remote workspace up from the app (phase 7)
+
+Until now a binding was a JSON file written by hand, with the helper built on the host. The new-project chooser has a fourth card, **Remote workspace**, that does it: host, then the helper on it, then a folder, then the project.
+The card appears only when the backend answers `remote_bindings` (a build with `remote-bridge`), so the default build shows the same three cards as before.
+
+```
+ host key (ComputeHostKeyDialog) -> probe -> helper on the host -> folder -> project
+                                    sh -s     sha256, --version    list/make   stub + binding, then a real get_project
+```
+
+Where the code is:
+- `src-tauri/src/remote_bridge/setup.rs` (a child of `remote_bridge`, so it reaches the private binding file and `connect`): `remote_probe_host`, `remote_trust_host`, `remote_install_helper`, `remote_cancel_setup`, `remote_list_dir`, `remote_make_dir`, `remote_create_project`. All refuse any window but `main`.
+  The host name, user and port are validated before ssh sees them, every path is quoted with `sh_quote`, and the frontend never supplies a path to install to: the backend probes the host itself.
+- `remote_bridge.rs`: `update_config` writes `remote-workspaces.json` under a lock, through a temporary file and a rename, and refuses to write when the existing file cannot be parsed (reading treats it as empty, which would have erased the user's other entries on a write). `Config` is a `BTreeMap` now, so the file keeps a stable order.
+- `project.rs`: `create_remote_stub` writes only `project.json` (no `main.tex`, no `git init`), and `discard_remote_stub` takes it back while it holds nothing else. The library lists the stub.
+- `remote_commands::daemon_version_line` and `oleafly-remoted --version`: `oleafly-remoted <version> protocol <n>`. The helper runs the app's own commands, so one is usable only when `--version` prints exactly what the app expects.
+- `src/lib/remote-setup.ts`, `src/components/library/remote/*`, `ProjectKindChooser` and `NewProjectDialog`. `refreshRemoteWorkspaces()` reads the bindings again before the new project opens: `initRemoteWorkspaces` runs once at boot, and without this the new project's first `list_file_tree` would have gone to the empty local stub.
+
+What is installed, and where (shown to the user before anything is copied): `~/.oleafly/remoted/<app version>/oleafly-remoted` on the host, with its data in `~/.oleafly/remote-data`. Nothing outside `~/.oleafly` is touched.
+The copy goes over the user's own ssh (`SshInput::Reader`, with progress events `remote:setup`), into a temporary file that is made executable, checked against its SHA-256 on the host, and only then renamed. Install is idempotent: the same bytes already there copy nothing, a different or damaged file is replaced.
+
+Where the helper comes from on this computer, in order: `<data folder>/remote-daemons/<target>/oleafly-remoted`, then `oleafly-remoted` next to the app's own program when the host is of this computer's kind (a development build, a Mac host from a Mac). A file whose header is not an executable for the host's target is ignored. **No release job builds Linux helpers yet**, so an installed app has none to offer; when it has none for a host, the wizard says so and names the path to put one at. That is the open distribution question (bundle per target, download on first use, or build on the host).
+
+Found while building it:
+- The daemon links `webkit2gtk` and `gtk` on Linux (`cargo tree -i webkit2gtk --target x86_64-unknown-linux-gnu` shows both, through `tauri`), so a prebuilt Linux helper needs `libwebkit2gtk-4.1` and `libgtk-3` on the host at run time, which a server often lacks. The spike never saw this because it built the helper on a host that had the `-dev` packages. The probe looks for both libraries with `ldconfig -p` and the wizard shows the `apt` command; after a copy, `--version` is the real test, and a loader error is explained (libraries, a C library that is too old, a `noexec` home).
+- The daemon did not create its data folder, so a host that had never run it failed at `remoted.lock`. It does now (`remote_hub::data_file`, mode 0700), with a test.
+- The helper's unix socket lives under the data folder, and a socket path has a limit (104 bytes on macOS, 108 on Linux). A home folder with a very long path now makes the probe say so before anything is copied.
+- A helper that could not start made `connect` wait its whole 30 seconds, and then the reader's end-of-stream branch started `reconnect_loop` for a link that had never come up, with "reconnecting" notices and about ten minutes of retries against a binding the setup had already removed. Now the end of the stream gathers ssh's last words, releases the wait at once, and brings a link back only if it had said `ready`; `reconnect_loop` also stops when no project is bound to that host and helper any more (`still_bound`). This changes the bridge for hand-written bindings too: a first connection that fails is reported, not retried.
+- Helpers are built against glibc, so a musl host (Alpine) is refused with that reason. Their glibc floor is that of the machine that builds them.
+
+Verified:
+- Rust: 29 unit tests in `setup.rs` (probe parsing and its refusals, the install script's quoting and order, helper selection by header, folder listing, the broad-folder refusals, config writing without losing entries, a broken file left alone, eight writers at once, the stub and its removal) and one in `remote_hub`. `every_routed_command_is_registered` still passes. `cargo clippy -p oleafly --all-targets -D warnings` is clean with `remote-spike,remote-bridge`, with `remote-bridge` alone and with the default features.
+- End to end, over real ssh (`scripts/spike/remote-setup-e2e.sh`, which starts a throwaway sshd on 127.0.0.1:22022 with a scratch `$HOME`; the "host" is this Mac): an unknown host key is reported and then trusted by fingerprint; the probe reads `Darwin arm64`; the 178 MB debug helper is copied, checked and started, with `upload` and `done` progress events; a second call copies nothing; appending a byte to the installed helper makes the next call replace it; folders are listed and made; the home folder and a missing folder are refused and leave no project and no binding behind; a helper that cannot start (the host's data folder made read-only) fails the creation in about 14 seconds, mostly the probe's checksum of the helper, with the host's own "Permission denied" in the message, the binding file back to empty, the project list unchanged and no `reconnecting` event in the following four seconds; then the project is created and a real `list_file_tree` and `get_project` through the persistent daemon return the host's `paper.tex` as the main document; the local project folder holds only `project.json`.
+- Frontend: `remote-workspace.test.ts` (4 new: availability, a new binding routes at once, a failed read keeps what is known, nothing when the backend lacks the commands), `remote-setup.test.ts`, `RemoteProjectDialog.test.tsx` (15: ssh hosts, straight to the folder when the helper is there, the consent text and Install, missing libraries, no helper for the host, a failed copy, a new host key and a changed one, three failure kinds, a failed create keeps the form, a missing and a read-only folder, a copy stopped when the dialog goes away) and 2 new `ProjectKindChooser` tests (no remote card without the backend, a fourth card with it). `tsc` and `biome lint` are clean (two older warnings in test files). The 53 new keys exist in all 22 locales; `pnpm i18n:validate` reports 515 errors here, the same as the parent commit (Node 26's plural data for `vi`), none from the new keys.
+  Full `vitest run` here: 52 failed, 24,290 passed, 7 skipped. The 12 files that fail (Typst, `ChatComposer`, `SettingsModal.search`, `mermaid-diagram`, `split-resizer` and others, which need `localStorage` or the real sidecars) fail the same 52 tests on the parent commit, so the change added none; none of them touches the library, the new project dialog, the tours or the catalogs.
+  The wizard was also looked at in a browser with the Tauri calls faked (light and dark): the chooser with four cards, the host, install (with the progress bar), missing-libraries and folder steps. A dialog taller than the window now scrolls.
+
+Not verified:
+- A real **Linux** host. The Linux-only paths (`ldconfig` and the library check, glibc and musl detection, `aarch64`) are covered by tests of the parsers and messages, not by a run. The loopback host is a Mac.
+- The wizard in the running Tauri window: its tests drive it with the backend mocked. The progress bar against a real transfer was not seen.
+- The app started from the Finder or the Dock has no `SSH_AUTH_SOCK` unless launchd provides one; keys protected by a passphrase and not in an agent fail with the "keys or agent" message. Not tested.
+- `ProxyJump` and other `~/.ssh/config` features: the wizard passes the config alias as the host, so they should apply as they do for Research compute targets, but no run used one.
+- Cancelling a copy: the host's script removes its temporary file on a hangup, but a cancel after the file has been renamed leaves a complete helper there, which the next install reuses. Neither case was run.
+- After an app update a binding still points at the older helper. `ensure_helper` is idempotent and could run on connect; it does not yet.
+- Host-side messages (a probe failure, the reason a helper is unavailable, a missing folder) are English text from the backend, like the link notices, and are not in the catalogs.
+- The chooser reuses the open-folder picture for the new card until it has art of its own.
+
+To try it on a Linux host today (the first real run of the Linux-only paths): a helper from before this phase has no `--version`, so the wizard does not count it. Build one from this branch on the host and put it where the wizard looks:
+
+```bash
+cargo build -p oleafly --features remote-spike --bin oleafly-remoted
+install -D target/debug/oleafly-remoted ~/.oleafly/remoted/0.4.11/oleafly-remoted
+```
+
+The wizard then sees a current helper and goes straight to the folder. Without it the wizard reports that this app has no helper for the host.

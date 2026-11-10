@@ -215,7 +215,72 @@
     "template": {
       "title": "템플릿 사용",
       "description": "저널 논문, 학위논문, 보고서, 포스터, 발표 자료용으로 준비된 레이아웃에서 시작합니다."
+    },
+    "remote": {
+      "title": "원격 작업 공간",
+      "description": "다른 컴퓨터에 있는 폴더에서 작업합니다. 파일, 터미널, 에이전트, Git, LaTeX 빌드가 그곳에서 실행됩니다."
     }
+  },
+  "remote": {
+    "description": "프로젝트는 다른 컴퓨터에 그대로 있습니다. Oleafly는 사용자의 SSH 키로 연결하고 터미널, 에이전트, 파일, Git, LaTeX 빌드를 그곳에서 실행합니다.",
+    "host": {
+      "title": "어느 컴퓨터인가요?",
+      "known": "SSH 설정에서",
+      "hostLabel": "호스트",
+      "userLabel": "사용자(선택)",
+      "portLabel": "포트(선택)",
+      "hint": "Oleafly는 SSH 키나 에이전트로 로그인하며 비밀번호를 묻지 않습니다. 이 호스트로의 ssh가 터미널에서 묻지 않고 동작한다면 여기서도 동작합니다.",
+      "connect": "연결"
+    },
+    "checking": "{{host}}에 연결하는 중…",
+    "failed": {
+      "title": "{{host}}을(를) 설정하지 못했습니다",
+      "auth": "{{host}}이(가) SSH 키를 받아들이지 않았습니다. 터미널에서 비밀번호 요청 없이 ssh로 접속할 수 있는지, 키가 SSH 에이전트에 로드되어 있는지 확인하세요.",
+      "network": "Oleafly가 {{host}}에 연결하지 못했습니다. 이름, 포트, 네트워크 또는 VPN을 확인하세요.",
+      "ssh": "이 컴퓨터에 OpenSSH가 설치되어 있지 않습니다. 설치한 뒤 다시 시도하세요."
+    },
+    "helper": {
+      "title": "{{host}}의 Oleafly",
+      "system": "시스템: {{system}}",
+      "latexmk": "LaTeX 빌드(latexmk): {{status}}",
+      "git": "Git: {{status}}",
+      "found": "찾음",
+      "notFound": "찾을 수 없음",
+      "installed": "Oleafly 도우미({{version}})가 {{host}}에 설치되어 있습니다.",
+      "installBody": "Oleafly는 SSH 연결을 통해 작은 프로그램인 도우미를 {{host}}의 {{dir}}에 복사합니다. 제자리에 두기 전에 SHA-256으로 확인하며, 터미널, 에이전트, 빌드를 그 컴퓨터에서 실행합니다. ~/.oleafly 밖의 어떤 것도 건드리지 않으며 그 폴더를 삭제하면 제거됩니다.",
+      "size": "크기: {{size}}",
+      "install": "{{host}}에 설치",
+      "checking": "{{host}} 확인 중…",
+      "copying": "도우미 복사 중: {{total}} 중 {{sent}}",
+      "verifying": "복사본 확인 중…",
+      "stop": "중지",
+      "libsTitle": "도우미에 필요한 라이브러리가 없습니다",
+      "libsBody": "{{host}}에 {{libs}}이(가) 없으며 도우미는 설치된 뒤에야 시작됩니다. Ubuntu나 Debian에서는 호스트에서 아래 명령을 실행한 다음 다시 확인하세요.",
+      "libsCheck": "다시 확인",
+      "continue": "계속"
+    },
+    "folder": {
+      "title": "어느 폴더인가요?",
+      "body": "{{host}}에서 프로젝트가 있는 폴더를 고르거나 새로 만드세요.",
+      "pathLabel": "호스트의 폴더",
+      "up": "한 단계 위로",
+      "empty": "폴더가 없습니다.",
+      "items": "이 폴더의 항목 수: {{count}}",
+      "hasTex": "LaTeX 파일이 있음",
+      "hasGit": "Git 저장소임",
+      "notWritable": "호스트의 이 폴더에는 쓸 수 없습니다.",
+      "tooBroad": "{{home}} 안의 폴더를 고르세요. 홈 폴더 전체나 디스크 전체는 프로젝트에 너무 넓습니다.",
+      "missing": "이 폴더는 호스트에 없습니다.",
+      "createMissing": "만들기",
+      "denied": "호스트가 이 폴더를 열도록 허용하지 않았습니다.",
+      "newFolder": "새 폴더",
+      "newFolderPlaceholder": "폴더 이름",
+      "createFolder": "만들기",
+      "nameLabel": "프로젝트 이름",
+      "create": "프로젝트 만들기"
+    },
+    "creating": "{{host}}에 연결하고 폴더를 여는 중…",
+    "createFailed": "프로젝트를 만들 수 없습니다."
   },
   "import": {
     "title": "프로젝트 가져오기",

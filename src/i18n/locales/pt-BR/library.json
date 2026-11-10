@@ -225,7 +225,72 @@
     "template": {
       "title": "Usar um modelo",
       "description": "Comece a partir de um layout pronto para artigo de periódico, tese, relatório, pôster ou palestra."
+    },
+    "remote": {
+      "title": "Espaço de trabalho remoto",
+      "description": "Trabalhe em uma pasta que está em outro computador. Os arquivos, o terminal, os agentes, o Git e a compilação LaTeX rodam lá."
     }
+  },
+  "remote": {
+    "description": "O projeto fica em outro computador. O Oleafly se conecta com suas próprias chaves SSH e executa lá o terminal, os agentes, os arquivos, o Git e a compilação LaTeX.",
+    "host": {
+      "title": "Qual computador?",
+      "known": "Da sua configuração SSH",
+      "hostLabel": "Host",
+      "userLabel": "Usuário (opcional)",
+      "portLabel": "Porta (opcional)",
+      "hint": "O Oleafly entra com suas chaves SSH ou com o agente e nunca pede senha. Se o ssh para este host funciona em um terminal sem pedir nada, funciona aqui também.",
+      "connect": "Conectar"
+    },
+    "checking": "Conectando a {{host}}…",
+    "failed": {
+      "title": "Não foi possível configurar {{host}}",
+      "auth": "{{host}} não aceitou suas chaves SSH. Verifique se você consegue usar o ssh em um terminal sem que peçam senha e se a chave está carregada no agente SSH.",
+      "network": "O Oleafly não conseguiu alcançar {{host}}. Verifique o nome, a porta e sua rede ou VPN.",
+      "ssh": "O OpenSSH não está instalado neste computador. Instale-o e tente de novo."
+    },
+    "helper": {
+      "title": "O Oleafly em {{host}}",
+      "system": "Sistema: {{system}}",
+      "latexmk": "Compilação LaTeX (latexmk): {{status}}",
+      "git": "Git: {{status}}",
+      "found": "encontrado",
+      "notFound": "não encontrado",
+      "installed": "O auxiliar do Oleafly ({{version}}) está instalado em {{host}}.",
+      "installBody": "O Oleafly vai copiar um programa pequeno, o auxiliar, para {{dir}} em {{host}} pela sua conexão SSH. Ele é conferido com o SHA-256 antes de ser colocado no lugar e executa o terminal, os agentes e as compilações naquele computador. Nada fora de ~/.oleafly é alterado, e apagar essa pasta o remove.",
+      "size": "Tamanho: {{size}}",
+      "install": "Instalar em {{host}}",
+      "checking": "Verificando {{host}}…",
+      "copying": "Copiando o auxiliar: {{sent}} de {{total}}",
+      "verifying": "Verificando a cópia…",
+      "stop": "Parar",
+      "libsTitle": "Faltam bibliotecas de que o auxiliar precisa",
+      "libsBody": "Em {{host}} faltam {{libs}}, e o auxiliar só inicia quando elas estiverem instaladas. No Ubuntu ou Debian, execute o comando abaixo no host e verifique de novo.",
+      "libsCheck": "Verificar de novo",
+      "continue": "Continuar"
+    },
+    "folder": {
+      "title": "Qual pasta?",
+      "body": "Escolha a pasta em {{host}} que contém o projeto, ou crie uma.",
+      "pathLabel": "Pasta no host",
+      "up": "Subir um nível",
+      "empty": "Nenhuma pasta aqui.",
+      "items": "Itens nesta pasta: {{count}}",
+      "hasTex": "Tem arquivos LaTeX",
+      "hasGit": "É um repositório Git",
+      "notWritable": "Você não pode gravar nesta pasta no host.",
+      "tooBroad": "Escolha uma pasta dentro de {{home}}. Uma pasta pessoal inteira ou um disco é amplo demais para um projeto.",
+      "missing": "Esta pasta não existe no host.",
+      "createMissing": "Criar",
+      "denied": "O host não permitiu abrir esta pasta.",
+      "newFolder": "Nova pasta",
+      "newFolderPlaceholder": "Nome da pasta",
+      "createFolder": "Criar",
+      "nameLabel": "Nome do projeto",
+      "create": "Criar projeto"
+    },
+    "creating": "Conectando a {{host}} e abrindo a pasta…",
+    "createFailed": "Não foi possível criar o projeto."
   },
   "import": {
     "title": "Importar um projeto",

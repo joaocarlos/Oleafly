@@ -225,7 +225,72 @@
     "template": {
       "title": "Utiliser un modèle",
       "description": "Partez d'une mise en page prête pour un article de revue, une thèse, un rapport, un poster ou un exposé."
+    },
+    "remote": {
+      "title": "Espace de travail distant",
+      "description": "Travaillez sur un dossier situé sur un autre ordinateur. Ses fichiers, son terminal, ses agents, Git et la compilation LaTeX s'exécutent là-bas."
     }
+  },
+  "remote": {
+    "description": "Le projet reste sur un autre ordinateur. Oleafly se connecte avec vos propres clés SSH et y exécute le terminal, les agents, les fichiers, Git et la compilation LaTeX.",
+    "host": {
+      "title": "Quel ordinateur ?",
+      "known": "Depuis votre configuration SSH",
+      "hostLabel": "Hôte",
+      "userLabel": "Utilisateur (facultatif)",
+      "portLabel": "Port (facultatif)",
+      "hint": "Oleafly se connecte avec vos clés SSH ou votre agent et ne demande jamais de mot de passe. Si ssh vers cet hôte fonctionne dans un terminal sans invite, cela fonctionne ici aussi.",
+      "connect": "Se connecter"
+    },
+    "checking": "Connexion à {{host}}…",
+    "failed": {
+      "title": "Impossible de configurer {{host}}",
+      "auth": "{{host}} n'a pas accepté vos clés SSH. Vérifiez que vous pouvez utiliser ssh depuis un terminal sans mot de passe et que votre clé est chargée dans l'agent SSH.",
+      "network": "Oleafly n'a pas pu joindre {{host}}. Vérifiez le nom, le port et votre réseau ou VPN.",
+      "ssh": "OpenSSH n'est pas installé sur cet ordinateur. Installez-le puis réessayez."
+    },
+    "helper": {
+      "title": "Oleafly sur {{host}}",
+      "system": "Système : {{system}}",
+      "latexmk": "Compilation LaTeX (latexmk) : {{status}}",
+      "git": "Git : {{status}}",
+      "found": "trouvé",
+      "notFound": "introuvable",
+      "installed": "L'assistant Oleafly ({{version}}) est installé sur {{host}}.",
+      "installBody": "Oleafly va copier un petit programme, l'assistant, dans {{dir}} sur {{host}} par votre connexion SSH. Il est vérifié avec son SHA-256 avant d'être mis en place, et il exécute le terminal, les agents et les compilations sur cet ordinateur. Rien en dehors de ~/.oleafly n'est modifié, et supprimer ce dossier le retire.",
+      "size": "Taille : {{size}}",
+      "install": "Installer sur {{host}}",
+      "checking": "Vérification de {{host}}…",
+      "copying": "Copie de l'assistant : {{sent}} sur {{total}}",
+      "verifying": "Vérification de la copie…",
+      "stop": "Arrêter",
+      "libsTitle": "Des bibliothèques nécessaires à l'assistant manquent",
+      "libsBody": "Il manque {{libs}} sur {{host}}, et l'assistant ne démarre que lorsqu'elles sont installées. Sous Ubuntu ou Debian, exécutez la commande ci-dessous sur l'hôte, puis vérifiez à nouveau.",
+      "libsCheck": "Vérifier à nouveau",
+      "continue": "Continuer"
+    },
+    "folder": {
+      "title": "Quel dossier ?",
+      "body": "Choisissez le dossier de {{host}} qui contient le projet, ou créez-en un.",
+      "pathLabel": "Dossier sur l'hôte",
+      "up": "Remonter d'un niveau",
+      "empty": "Aucun dossier ici.",
+      "items": "Éléments dans ce dossier : {{count}}",
+      "hasTex": "Contient des fichiers LaTeX",
+      "hasGit": "Est un dépôt Git",
+      "notWritable": "Vous ne pouvez pas écrire dans ce dossier de l'hôte.",
+      "tooBroad": "Choisissez un dossier dans {{home}}. Un dossier personnel entier ou un disque est trop large pour un projet.",
+      "missing": "Ce dossier n'existe pas sur l'hôte.",
+      "createMissing": "Le créer",
+      "denied": "L'hôte ne vous a pas laissé ouvrir ce dossier.",
+      "newFolder": "Nouveau dossier",
+      "newFolderPlaceholder": "Nom du dossier",
+      "createFolder": "Créer",
+      "nameLabel": "Nom du projet",
+      "create": "Créer le projet"
+    },
+    "creating": "Connexion à {{host}} et ouverture du dossier…",
+    "createFailed": "Impossible de créer le projet."
   },
   "import": {
     "title": "Importer un projet",

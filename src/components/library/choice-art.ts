@@ -4,6 +4,8 @@ export const CHOICE_ART = {
   template: "/project-kind/use-template-light.webp",
   newProject: "/project-kind/new-project-light.webp",
   openFolder: "/project-kind/open-folder-light.webp",
+  // Shares the open-folder picture until the remote workspace has art of its own.
+  remote: "/project-kind/open-folder-light.webp",
   importArchive: "/project-kind/import-archive-light.webp",
   importWord: "/project-kind/import-word-light.webp",
   importMarkdown: "/project-kind/import-markdown-light.webp",

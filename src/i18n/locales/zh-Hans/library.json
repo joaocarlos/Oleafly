@@ -215,7 +215,72 @@
     "template": {
       "title": "使用模板",
       "description": "从适用于期刊论文、学位论文、报告、海报或演讲的预设版式开始。"
+    },
+    "remote": {
+      "title": "远程工作区",
+      "description": "在另一台电脑上的文件夹中工作。它的文件、终端、代理、Git 和 LaTeX 构建都在那里运行。"
     }
+  },
+  "remote": {
+    "description": "项目保留在另一台电脑上。Oleafly 使用你自己的 SSH 密钥连接，并在那里运行终端、智能体、文件、Git 和 LaTeX 构建。",
+    "host": {
+      "title": "哪台电脑？",
+      "known": "来自你的 SSH 配置",
+      "hostLabel": "主机",
+      "userLabel": "用户（可选）",
+      "portLabel": "端口（可选）",
+      "hint": "Oleafly 使用你的 SSH 密钥或代理登录，从不询问密码。如果到该主机的 ssh 在终端中无需提示即可使用，在这里也可以。",
+      "connect": "连接"
+    },
+    "checking": "正在连接 {{host}}…",
+    "failed": {
+      "title": "无法设置 {{host}}",
+      "auth": "{{host}} 没有接受你的 SSH 密钥。请确认你可以在终端中无需输入密码地用 ssh 连接，并且密钥已加载到 SSH 代理中。",
+      "network": "Oleafly 无法连接到 {{host}}。请检查名称、端口以及你的网络或 VPN。",
+      "ssh": "这台电脑上没有安装 OpenSSH。请安装后重试。"
+    },
+    "helper": {
+      "title": "{{host}} 上的 Oleafly",
+      "system": "系统：{{system}}",
+      "latexmk": "LaTeX 构建（latexmk）：{{status}}",
+      "git": "Git：{{status}}",
+      "found": "已找到",
+      "notFound": "未找到",
+      "installed": "Oleafly 助手（{{version}}）已安装在 {{host}} 上。",
+      "installBody": "Oleafly 会通过你的 SSH 连接，把一个小程序（助手）复制到 {{host}} 上的 {{dir}}。放置到位之前会用 SHA-256 校验，它会在那台电脑上运行终端、智能体和构建。不会改动 ~/.oleafly 之外的任何内容，删除该文件夹即可移除。",
+      "size": "大小：{{size}}",
+      "install": "安装到 {{host}}",
+      "checking": "正在检查 {{host}}…",
+      "copying": "正在复制助手：{{sent}} / {{total}}",
+      "verifying": "正在校验副本…",
+      "stop": "停止",
+      "libsTitle": "缺少助手所需的库",
+      "libsBody": "{{host}} 缺少 {{libs}}，安装后助手才会启动。在 Ubuntu 或 Debian 上，请在主机上运行下面的命令，然后重新检查。",
+      "libsCheck": "重新检查",
+      "continue": "继续"
+    },
+    "folder": {
+      "title": "哪个文件夹？",
+      "body": "选择 {{host}} 上包含项目的文件夹，或新建一个。",
+      "pathLabel": "主机上的文件夹",
+      "up": "上一级",
+      "empty": "这里没有文件夹。",
+      "items": "此文件夹中的项目数：{{count}}",
+      "hasTex": "包含 LaTeX 文件",
+      "hasGit": "是 Git 仓库",
+      "notWritable": "你无法写入主机上的这个文件夹。",
+      "tooBroad": "请选择 {{home}} 内的文件夹。整个主文件夹或整个磁盘对项目来说范围太大。",
+      "missing": "主机上不存在此文件夹。",
+      "createMissing": "创建它",
+      "denied": "主机不允许你打开此文件夹。",
+      "newFolder": "新建文件夹",
+      "newFolderPlaceholder": "文件夹名称",
+      "createFolder": "创建",
+      "nameLabel": "项目名称",
+      "create": "创建项目"
+    },
+    "creating": "正在连接 {{host}} 并打开文件夹…",
+    "createFailed": "无法创建项目。"
   },
   "import": {
     "title": "导入项目",

@@ -90,17 +90,41 @@ async function watchRemoteState(): Promise<void> {
   }
 }
 
-export async function initRemoteWorkspaces(): Promise<void> {
+/** Whether this build of the app can run a project on another machine (its backend has the remote commands). */
+let available = false;
+
+async function loadRemoteInfo(): Promise<boolean> {
   try {
     const info = await invoke<RemoteInfo>("remote_bindings");
     const list = Array.isArray(info?.bindings) ? info.bindings : [];
     bindings = new Map(list.map((binding) => [binding.projectId, binding]));
     fileCommands = new Set(Array.isArray(info?.files) ? info.files : []);
     if (bindings.size > 0) void watchRemoteState();
+    return true;
   } catch {
+    return false;
+  }
+}
+
+export async function initRemoteWorkspaces(): Promise<void> {
+  available = await loadRemoteInfo();
+  if (!available) {
     bindings = new Map();
     fileCommands = new Set();
   }
+}
+
+/**
+ * Reads the bindings again, after one was added at run time. Until then a new project's first
+ * calls would still go to this computer. A failed read keeps what is already known.
+ */
+export async function refreshRemoteWorkspaces(): Promise<void> {
+  if (!available) return;
+  await loadRemoteInfo();
+}
+
+export function remoteWorkspacesAvailable(): boolean {
+  return available;
 }
 
 export function remoteBindingFor(projectId: string): RemoteBinding | null {

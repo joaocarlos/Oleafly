@@ -215,7 +215,72 @@
     "template": {
       "title": "Dùng một mẫu",
       "description": "Bắt đầu từ bố cục có sẵn cho bài báo tạp chí, luận văn, báo cáo, poster hay bài nói."
+    },
+    "remote": {
+      "title": "Không gian làm việc từ xa",
+      "description": "Làm việc với một thư mục nằm trên máy tính khác. Tệp, terminal, agent, Git và quá trình biên dịch LaTeX của nó chạy ở đó."
     }
+  },
+  "remote": {
+    "description": "Dự án nằm lại trên máy tính khác. Oleafly kết nối bằng khóa SSH của bạn và chạy terminal, tác tử, tệp, Git cùng quá trình biên dịch LaTeX ở đó.",
+    "host": {
+      "title": "Máy tính nào?",
+      "known": "Từ cấu hình SSH của bạn",
+      "hostLabel": "Máy chủ",
+      "userLabel": "Người dùng (tùy chọn)",
+      "portLabel": "Cổng (tùy chọn)",
+      "hint": "Oleafly đăng nhập bằng khóa SSH hoặc tác tử của bạn và không bao giờ hỏi mật khẩu. Nếu ssh tới máy chủ này chạy được trong terminal mà không bị hỏi, thì ở đây cũng chạy được.",
+      "connect": "Kết nối"
+    },
+    "checking": "Đang kết nối tới {{host}}…",
+    "failed": {
+      "title": "Không thể thiết lập {{host}}",
+      "auth": "{{host}} không chấp nhận khóa SSH của bạn. Hãy kiểm tra rằng bạn dùng được ssh từ terminal mà không bị hỏi mật khẩu và khóa của bạn đã được nạp vào tác tử SSH.",
+      "network": "Oleafly không thể kết nối tới {{host}}. Hãy kiểm tra tên, cổng và mạng hoặc VPN của bạn.",
+      "ssh": "OpenSSH chưa được cài trên máy tính này. Hãy cài rồi thử lại."
+    },
+    "helper": {
+      "title": "Oleafly trên {{host}}",
+      "system": "Hệ thống: {{system}}",
+      "latexmk": "Biên dịch LaTeX (latexmk): {{status}}",
+      "git": "Git: {{status}}",
+      "found": "đã tìm thấy",
+      "notFound": "không tìm thấy",
+      "installed": "Trình hỗ trợ Oleafly ({{version}}) đã được cài trên {{host}}.",
+      "installBody": "Oleafly sẽ sao chép một chương trình nhỏ, trình hỗ trợ, vào {{dir}} trên {{host}} qua kết nối SSH của bạn. Nó được kiểm tra bằng SHA-256 trước khi đặt vào vị trí và chạy terminal, tác tử cùng các lần biên dịch trên máy tính đó. Không có gì ngoài ~/.oleafly bị động tới, và xóa thư mục đó sẽ gỡ nó.",
+      "size": "Kích thước: {{size}}",
+      "install": "Cài trên {{host}}",
+      "checking": "Đang kiểm tra {{host}}…",
+      "copying": "Đang sao chép trình hỗ trợ: {{sent}} trên {{total}}",
+      "verifying": "Đang xác minh bản sao…",
+      "stop": "Dừng",
+      "libsTitle": "Thiếu các thư viện mà trình hỗ trợ cần",
+      "libsBody": "{{host}} thiếu {{libs}}, và trình hỗ trợ chỉ khởi động khi chúng đã được cài. Trên Ubuntu hoặc Debian, hãy chạy lệnh bên dưới trên máy chủ rồi kiểm tra lại.",
+      "libsCheck": "Kiểm tra lại",
+      "continue": "Tiếp tục"
+    },
+    "folder": {
+      "title": "Thư mục nào?",
+      "body": "Chọn thư mục trên {{host}} chứa dự án, hoặc tạo một thư mục.",
+      "pathLabel": "Thư mục trên máy chủ",
+      "up": "Lên một cấp",
+      "empty": "Không có thư mục nào ở đây.",
+      "items": "Số mục trong thư mục này: {{count}}",
+      "hasTex": "Có tệp LaTeX",
+      "hasGit": "Là kho Git",
+      "notWritable": "Bạn không thể ghi vào thư mục này trên máy chủ.",
+      "tooBroad": "Hãy chọn một thư mục bên trong {{home}}. Cả thư mục chính hoặc cả ổ đĩa là quá rộng cho một dự án.",
+      "missing": "Thư mục này không tồn tại trên máy chủ.",
+      "createMissing": "Tạo thư mục",
+      "denied": "Máy chủ không cho bạn mở thư mục này.",
+      "newFolder": "Thư mục mới",
+      "newFolderPlaceholder": "Tên thư mục",
+      "createFolder": "Tạo",
+      "nameLabel": "Tên dự án",
+      "create": "Tạo dự án"
+    },
+    "creating": "Đang kết nối tới {{host}} và mở thư mục…",
+    "createFailed": "Không thể tạo dự án."
   },
   "import": {
     "title": "Nhập một dự án",

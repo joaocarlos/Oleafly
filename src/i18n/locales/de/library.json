@@ -220,7 +220,72 @@
     "template": {
       "title": "Eine Vorlage verwenden",
       "description": "Beginnen Sie mit einem fertigen Layout für Zeitschriftenaufsatz, Abschlussarbeit, Bericht, Poster oder Vortrag."
+    },
+    "remote": {
+      "title": "Entfernter Arbeitsbereich",
+      "description": "Arbeiten Sie an einem Ordner, der auf einem anderen Computer liegt. Dateien, Terminal, Agenten, Git und die LaTeX-Kompilierung laufen dort."
     }
+  },
+  "remote": {
+    "description": "Das Projekt bleibt auf einem anderen Computer. Oleafly verbindet sich mit Ihren eigenen SSH-Schlüsseln und führt dort Terminal, Agenten, Dateien, Git und die LaTeX-Kompilierung aus.",
+    "host": {
+      "title": "Welcher Computer?",
+      "known": "Aus Ihrer SSH-Konfiguration",
+      "hostLabel": "Host",
+      "userLabel": "Benutzer (optional)",
+      "portLabel": "Port (optional)",
+      "hint": "Oleafly meldet sich mit Ihren SSH-Schlüsseln oder Ihrem Agenten an und fragt nie nach einem Passwort. Funktioniert ssh zu diesem Host im Terminal ohne Abfrage, funktioniert es auch hier.",
+      "connect": "Verbinden"
+    },
+    "checking": "Verbindung zu {{host}} wird hergestellt…",
+    "failed": {
+      "title": "{{host}} konnte nicht eingerichtet werden",
+      "auth": "{{host}} hat Ihre SSH-Schlüssel nicht akzeptiert. Prüfen Sie, ob ssh im Terminal ohne Passwortabfrage funktioniert und ob Ihr Schlüssel im SSH-Agenten geladen ist.",
+      "network": "Oleafly konnte {{host}} nicht erreichen. Prüfen Sie Name, Port und Ihr Netzwerk oder VPN.",
+      "ssh": "OpenSSH ist auf diesem Computer nicht installiert. Installieren Sie es und versuchen Sie es erneut."
+    },
+    "helper": {
+      "title": "Oleafly auf {{host}}",
+      "system": "System: {{system}}",
+      "latexmk": "LaTeX-Kompilierung (latexmk): {{status}}",
+      "git": "Git: {{status}}",
+      "found": "gefunden",
+      "notFound": "nicht gefunden",
+      "installed": "Der Oleafly-Helfer ({{version}}) ist auf {{host}} installiert.",
+      "installBody": "Oleafly kopiert ein kleines Programm, den Helfer, über Ihre SSH-Verbindung nach {{dir}} auf {{host}}. Vor dem Einsetzen wird es anhand seines SHA-256 geprüft, und es führt Terminal, Agenten und Kompilierungen auf diesem Computer aus. Außerhalb von ~/.oleafly wird nichts verändert, und das Löschen dieses Ordners entfernt es.",
+      "size": "Größe: {{size}}",
+      "install": "Auf {{host}} installieren",
+      "checking": "{{host}} wird geprüft…",
+      "copying": "Helfer wird kopiert: {{sent}} von {{total}}",
+      "verifying": "Kopie wird überprüft…",
+      "stop": "Stoppen",
+      "libsTitle": "Bibliotheken, die der Helfer braucht, fehlen",
+      "libsBody": "Auf {{host}} fehlen {{libs}}, und der Helfer startet erst, wenn sie installiert sind. Führen Sie unter Ubuntu oder Debian den folgenden Befehl auf dem Host aus und prüfen Sie dann erneut.",
+      "libsCheck": "Erneut prüfen",
+      "continue": "Weiter"
+    },
+    "folder": {
+      "title": "Welcher Ordner?",
+      "body": "Wählen Sie den Ordner auf {{host}}, der das Projekt enthält, oder legen Sie einen an.",
+      "pathLabel": "Ordner auf dem Host",
+      "up": "Eine Ebene höher",
+      "empty": "Hier gibt es keine Ordner.",
+      "items": "Elemente in diesem Ordner: {{count}}",
+      "hasTex": "Enthält LaTeX-Dateien",
+      "hasGit": "Ist ein Git-Repository",
+      "notWritable": "Sie können in diesen Ordner auf dem Host nicht schreiben.",
+      "tooBroad": "Wählen Sie einen Ordner in {{home}}. Ein ganzer Home-Ordner oder Datenträger ist für ein Projekt zu weit gefasst.",
+      "missing": "Dieser Ordner existiert auf dem Host nicht.",
+      "createMissing": "Anlegen",
+      "denied": "Der Host hat Ihnen das Öffnen dieses Ordners nicht erlaubt.",
+      "newFolder": "Neuer Ordner",
+      "newFolderPlaceholder": "Ordnername",
+      "createFolder": "Anlegen",
+      "nameLabel": "Projektname",
+      "create": "Projekt erstellen"
+    },
+    "creating": "Verbindung zu {{host}} wird hergestellt und der Ordner geöffnet…",
+    "createFailed": "Das Projekt konnte nicht erstellt werden."
   },
   "import": {
     "title": "Ein Projekt importieren",

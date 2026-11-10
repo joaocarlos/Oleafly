@@ -550,6 +550,20 @@ pub fn run() {
             remote_bridge::remote_trust_folder,
             #[cfg(feature = "remote-bridge")]
             remote_bridge::remote_stop_host,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::setup::remote_probe_host,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::setup::remote_trust_host,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::setup::remote_install_helper,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::setup::remote_cancel_setup,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::setup::remote_list_dir,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::setup::remote_make_dir,
+            #[cfg(feature = "remote-bridge")]
+            remote_bridge::setup::remote_create_project,
             typst_render::render_typst_snippet,
             typst_query::typst_document_insights,
             typst_slide_notes::typst_slide_notes,

@@ -4,6 +4,17 @@
 //! the daemon answers each of them.
 #![cfg_attr(not(feature = "remote-bridge"), allow(dead_code))]
 
+/// What `oleafly-remoted --version` prints. The daemon runs the app's own commands, so a host's
+/// program is usable only when it is exactly this build's version and protocol; the app compares
+/// the line it gets back from the host with this one.
+pub fn daemon_version_line() -> String {
+    format!(
+        "oleafly-remoted {} protocol {}",
+        env!("CARGO_PKG_VERSION"),
+        crate::protocol::PROTOCOL_VERSION
+    )
+}
+
 /// Agent and terminal commands are routed by prefix.
 pub const PREFIXES: &[&str] = &["acp_", "term_"];
 

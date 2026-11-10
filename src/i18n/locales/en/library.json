@@ -220,7 +220,72 @@
     "template": {
       "title": "Use a template",
       "description": "Begin from a prepared layout for a journal article, thesis, report, poster or talk."
+    },
+    "remote": {
+      "title": "Remote workspace",
+      "description": "Work on a folder that lives on another computer. Its files, terminal, agents, Git and LaTeX build run there."
     }
+  },
+  "remote": {
+    "description": "The project stays on another computer. Oleafly connects with your own SSH keys and runs the terminal, agents, files, Git and LaTeX build there.",
+    "host": {
+      "title": "Which computer?",
+      "known": "From your SSH configuration",
+      "hostLabel": "Host",
+      "userLabel": "User (optional)",
+      "portLabel": "Port (optional)",
+      "hint": "Oleafly signs in with your SSH keys or agent and never asks for a password. If ssh to this host works in a terminal without a prompt, it works here.",
+      "connect": "Connect"
+    },
+    "checking": "Connecting to {{host}}…",
+    "failed": {
+      "title": "Could not set up {{host}}",
+      "auth": "{{host}} did not accept your SSH keys. Check that you can ssh to it from a terminal without a password prompt and that your key is loaded in the SSH agent.",
+      "network": "Oleafly could not reach {{host}}. Check the name, the port, and your network or VPN.",
+      "ssh": "OpenSSH is not installed on this computer. Install it and try again."
+    },
+    "helper": {
+      "title": "Oleafly on {{host}}",
+      "system": "System: {{system}}",
+      "latexmk": "LaTeX build (latexmk): {{status}}",
+      "git": "Git: {{status}}",
+      "found": "found",
+      "notFound": "not found",
+      "installed": "The Oleafly helper ({{version}}) is installed on {{host}}.",
+      "installBody": "Oleafly will copy a small program, the helper, to {{dir}} on {{host}} over your SSH connection. It is checked against its SHA-256 before it is put in place, and it runs the terminal, agents and builds on that computer. Nothing outside ~/.oleafly is touched, and deleting that folder removes it.",
+      "size": "Size: {{size}}",
+      "install": "Install on {{host}}",
+      "checking": "Checking {{host}}…",
+      "copying": "Copying the helper: {{sent}} of {{total}}",
+      "verifying": "Verifying the copy…",
+      "stop": "Stop",
+      "libsTitle": "Libraries the helper needs are missing",
+      "libsBody": "{{host}} lacks {{libs}}, and the helper starts only when they are installed. On Ubuntu or Debian, run the command below on the host, then check again.",
+      "libsCheck": "Check again",
+      "continue": "Continue"
+    },
+    "folder": {
+      "title": "Which folder?",
+      "body": "Choose the folder on {{host}} that holds the project, or create one.",
+      "pathLabel": "Folder on the host",
+      "up": "Up one level",
+      "empty": "No folders here.",
+      "items": "Items in this folder: {{count}}",
+      "hasTex": "Has LaTeX files",
+      "hasGit": "Is a Git repository",
+      "notWritable": "You cannot write to this folder on the host.",
+      "tooBroad": "Choose a folder inside {{home}}. A whole home folder or disk is too broad for a project.",
+      "missing": "This folder does not exist on the host.",
+      "createMissing": "Create it",
+      "denied": "The host did not let you open this folder.",
+      "newFolder": "New folder",
+      "newFolderPlaceholder": "Folder name",
+      "createFolder": "Create",
+      "nameLabel": "Project name",
+      "create": "Create project"
+    },
+    "creating": "Connecting to {{host}} and opening the folder…",
+    "createFailed": "Could not create the project."
   },
   "import": {
     "title": "Import a project",

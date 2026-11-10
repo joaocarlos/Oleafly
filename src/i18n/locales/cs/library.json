@@ -230,7 +230,72 @@
     "template": {
       "title": "Použít šablonu",
       "description": "Začněte z připraveného rozvržení pro časopisecký článek, kvalifikační práci, zprávu, plakát nebo přednášku."
+    },
+    "remote": {
+      "title": "Vzdálený pracovní prostor",
+      "description": "Pracujte se složkou, která je na jiném počítači. Soubory, terminál, agenti, Git i sestavení LaTeX běží tam."
     }
+  },
+  "remote": {
+    "description": "Projekt zůstává na jiném počítači. Oleafly se připojí vašimi vlastními klíči SSH a spouští tam terminál, agenty, soubory, Git a sestavení LaTeX.",
+    "host": {
+      "title": "Který počítač?",
+      "known": "Z vaší konfigurace SSH",
+      "hostLabel": "Hostitel",
+      "userLabel": "Uživatel (volitelné)",
+      "portLabel": "Port (volitelné)",
+      "hint": "Oleafly se přihlašuje vašimi klíči SSH nebo agentem a nikdy nežádá o heslo. Pokud ssh k tomuto hostiteli funguje v terminálu bez dotazu, funguje i tady.",
+      "connect": "Připojit"
+    },
+    "checking": "Připojování k {{host}}…",
+    "failed": {
+      "title": "Nepodařilo se nastavit {{host}}",
+      "auth": "{{host}} nepřijal vaše klíče SSH. Ověřte, že se k němu dokážete připojit přes ssh z terminálu bez dotazu na heslo a že je váš klíč načtený v agentu SSH.",
+      "network": "Oleafly se nepodařilo spojit s {{host}}. Zkontrolujte název, port a vaši síť nebo VPN.",
+      "ssh": "OpenSSH není v tomto počítači nainstalován. Nainstalujte ho a zkuste to znovu."
+    },
+    "helper": {
+      "title": "Oleafly na {{host}}",
+      "system": "Systém: {{system}}",
+      "latexmk": "Sestavení LaTeX (latexmk): {{status}}",
+      "git": "Git: {{status}}",
+      "found": "nalezeno",
+      "notFound": "nenalezeno",
+      "installed": "Pomocník Oleafly ({{version}}) je nainstalován na {{host}}.",
+      "installBody": "Oleafly zkopíruje malý program, pomocníka, do {{dir}} na {{host}} přes vaše připojení SSH. Před nasazením se ověří pomocí SHA-256 a spouští tam terminál, agenty a sestavení. Mimo ~/.oleafly se nic nemění a smazáním této složky se odstraní.",
+      "size": "Velikost: {{size}}",
+      "install": "Nainstalovat na {{host}}",
+      "checking": "Kontrola {{host}}…",
+      "copying": "Kopírování pomocníka: {{sent}} z {{total}}",
+      "verifying": "Ověřování kopie…",
+      "stop": "Zastavit",
+      "libsTitle": "Chybí knihovny, které pomocník potřebuje",
+      "libsBody": "Na {{host}} chybí {{libs}} a pomocník se spustí, až budou nainstalovány. V Ubuntu nebo Debianu spusťte na hostiteli příkaz níže a pak zkontrolujte znovu.",
+      "libsCheck": "Zkontrolovat znovu",
+      "continue": "Pokračovat"
+    },
+    "folder": {
+      "title": "Která složka?",
+      "body": "Vyberte složku na {{host}}, která obsahuje projekt, nebo ji vytvořte.",
+      "pathLabel": "Složka na hostiteli",
+      "up": "O úroveň výš",
+      "empty": "Žádné složky.",
+      "items": "Položek v této složce: {{count}}",
+      "hasTex": "Obsahuje soubory LaTeX",
+      "hasGit": "Je repozitář Git",
+      "notWritable": "Do této složky na hostiteli nemůžete zapisovat.",
+      "tooBroad": "Vyberte složku uvnitř {{home}}. Celá domovská složka nebo disk je pro projekt příliš široký.",
+      "missing": "Tato složka na hostiteli neexistuje.",
+      "createMissing": "Vytvořit",
+      "denied": "Hostitel vám otevření této složky nepovolil.",
+      "newFolder": "Nová složka",
+      "newFolderPlaceholder": "Název složky",
+      "createFolder": "Vytvořit",
+      "nameLabel": "Název projektu",
+      "create": "Vytvořit projekt"
+    },
+    "creating": "Připojování k {{host}} a otevírání složky…",
+    "createFailed": "Projekt se nepodařilo vytvořit."
   },
   "import": {
     "title": "Import projektu",
