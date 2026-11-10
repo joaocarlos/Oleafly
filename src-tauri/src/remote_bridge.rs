@@ -32,6 +32,8 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{ChildStdin, Command};
 use tokio::sync::{oneshot, Mutex as AsyncMutex};
 
+/// The helper that comes with a release, fetched on first use for hosts of another kind.
+mod helper_release;
 /// Setting a remote workspace up from the app: the host check, the helper's installation, the
 /// folder and the project. It reaches into this module's private binding file and connection code.
 pub(crate) mod setup;

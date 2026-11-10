@@ -24,6 +24,7 @@ use oleafly_research::runs::RunError;
 use sha2::{Digest, Sha256};
 use tokio::io::{AsyncRead, ReadBuf};
 
+use super::helper_release::{self, Manifest, ReleaseHelper};
 use super::*;
 
 /// Where the helper lives on the host, relative to the user's home.
@@ -297,6 +298,11 @@ enum HelperSource {
     Provided,
     /// Next to the app's own program: a development build, or a host of this computer's own kind.
     NextToApp,
+    /// Fetched from this version's release earlier, and still the file the app was built to expect.
+    Downloaded,
+    /// Not on this computer yet: the app will download it from this version's release when the
+    /// user agrees to install.
+    Release,
 }
 
 /// The target this computer's own program is built for, when the helper next to it could run on a host.
@@ -318,7 +324,7 @@ fn helper_candidates(
 ) -> Vec<(PathBuf, HelperSource)> {
     let mut list = vec![(
         data_root
-            .join("remote-daemons")
+            .join(helper_release::DAEMONS_FOLDER)
             .join(triple)
             .join(HELPER_NAME),
         HelperSource::Provided,
@@ -328,6 +334,11 @@ fn helper_candidates(
             list.push((folder.join(HELPER_NAME), HelperSource::NextToApp));
         }
     }
+    // Last: a file the user or an installer put there on purpose wins over one fetched earlier.
+    list.push((
+        helper_release::install_dir(data_root, triple, env!("CARGO_PKG_VERSION")).join(HELPER_NAME),
+        HelperSource::Downloaded,
+    ));
     list
 }
 
@@ -415,10 +426,36 @@ fn find_helper(candidates: &[(PathBuf, HelperSource)], triple: &str) -> Option<L
     None
 }
 
-fn local_helper_for(triple: &str) -> Option<LocalHelper> {
+/// The first candidate that fits the host. A downloaded file counts only when it is exactly the
+/// one this build pins (same size and digest), so a damaged or replaced file is fetched again.
+fn find_acceptable_helper(
+    candidates: &[(PathBuf, HelperSource)],
+    triple: &str,
+    pinned: Option<&ReleaseHelper>,
+) -> Option<LocalHelper> {
+    candidates.iter().find_map(|candidate| {
+        find_helper(std::slice::from_ref(candidate), triple).filter(|helper| {
+            helper.source != HelperSource::Downloaded
+                || pinned.is_some_and(|pinned| {
+                    helper.sha256 == pinned.sha256 && helper.size == pinned.size
+                })
+        })
+    })
+}
+
+fn local_helper_for(triple: &str, pinned: Option<&ReleaseHelper>) -> Option<LocalHelper> {
     let root = crate::paths::oleafly_root().ok()?;
     let exe = std::env::current_exe().ok();
-    find_helper(&helper_candidates(&root, triple, exe.as_deref()), triple)
+    find_acceptable_helper(
+        &helper_candidates(&root, triple, exe.as_deref()),
+        triple,
+        pinned,
+    )
+}
+
+/// The helper this release carries for a host's target, when this build was given a manifest.
+fn release_helper_for(triple: &str) -> Option<ReleaseHelper> {
+    helper_release::embedded()?.for_triple(triple).cloned()
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -475,6 +512,28 @@ fn plan_helper(
     os: &str,
     arch: &str,
 ) -> (HelperPlan, Option<LocalHelper>) {
+    let manifest = helper_release::embedded();
+    plan_with(
+        triple,
+        libc,
+        os,
+        arch,
+        |pinned| local_helper_for(triple.unwrap_or_default(), pinned),
+        manifest.as_ref(),
+    )
+}
+
+/// The plan for a host, given how to look for a file on this computer and what this build's
+/// release carries. A file on this computer comes first; otherwise the release's helper is offered
+/// as a download; otherwise the user is told why there is none.
+fn plan_with(
+    triple: Option<&str>,
+    libc: Option<&str>,
+    os: &str,
+    arch: &str,
+    local: impl FnOnce(Option<&ReleaseHelper>) -> Option<LocalHelper>,
+    manifest: Option<&Manifest>,
+) -> (HelperPlan, Option<LocalHelper>) {
     let none = |reason: String| {
         (
             HelperPlan {
@@ -495,8 +554,9 @@ fn plan_helper(
     if libc == Some("musl") {
         return none("This host uses musl (for example Alpine Linux). The helper needs a glibc system such as Ubuntu, Debian, Fedora or Rocky.".into());
     }
-    match local_helper_for(triple) {
-        Some(helper) => (
+    let pinned = manifest.and_then(|manifest| manifest.for_triple(triple));
+    if let Some(helper) = local(pinned) {
+        return (
             HelperPlan {
                 available: true,
                 size: Some(helper.size),
@@ -504,12 +564,33 @@ fn plan_helper(
                 reason: None,
             },
             Some(helper),
-        ),
-        None => none(format!(
-            "This copy of Oleafly has no helper for {} ({triple}). Put one at remote-daemons/{triple}/{HELPER_NAME} in Oleafly's data folder, or build it on the host.",
-            describe_system(os, arch)
-        )),
+        );
     }
+    if let Some(pinned) = pinned {
+        return (
+            HelperPlan {
+                available: true,
+                size: Some(pinned.size),
+                source: Some(HelperSource::Release),
+                reason: None,
+            },
+            None,
+        );
+    }
+    let carried = manifest.map(|manifest| manifest.triples().join(", "));
+    let which = match carried {
+        Some(list) => format!(
+            "This version of Oleafly carries helpers for {list}, not for {} ({triple}).",
+            describe_system(os, arch)
+        ),
+        None => format!(
+            "This copy of Oleafly has no helper for {} ({triple}).",
+            describe_system(os, arch)
+        ),
+    };
+    none(format!(
+        "{which} Put one at remote-daemons/{triple}/{HELPER_NAME} in Oleafly's data folder, or build it on the host."
+    ))
 }
 
 fn host_paths(home: &str) -> (String, String) {
@@ -787,6 +868,42 @@ fn install_failed(error: RunError) -> String {
     }
 }
 
+/// Downloads the helper this release carries for the host's target, unless the pinned file is
+/// already in Oleafly's data folder. The installer refuses a file whose size or digest differs from
+/// the values this app was built with.
+async fn fetch_release_helper<R: Runtime>(
+    app: &AppHandle<R>,
+    host: &str,
+    release: &ReleaseHelper,
+    cancel: &CancellationToken,
+) -> Result<LocalHelper, String> {
+    let root = crate::paths::oleafly_root()?;
+    progress(app, host, "download", 0, release.size);
+    let (reporter, name) = (app.clone(), host.to_owned());
+    let path = helper_release::obtain(
+        &root,
+        release,
+        env!("CARGO_PKG_VERSION"),
+        HELPER_NAME,
+        cancel,
+        move |received, total| progress(&reporter, &name, "download", received, total),
+    )
+    .await
+    .map_err(|error| {
+        if cancel.is_cancelled() {
+            "Cancelled.".to_owned()
+        } else {
+            helper_release::describe_failure(&error, &release.triple, HELPER_NAME)
+        }
+    })?;
+    Ok(LocalHelper {
+        path,
+        sha256: release.sha256.clone(),
+        size: release.size,
+        source: HelperSource::Downloaded,
+    })
+}
+
 async fn ensure_helper<R: Runtime>(
     app: &AppHandle<R>,
     ctx: &SshContext,
@@ -817,11 +934,19 @@ async fn ensure_helper<R: Runtime>(
         bytes,
         missing_libs: probe.missing_libs.clone(),
     };
+    // A helper this app has to download is known by its pinned digest before it is fetched, so an
+    // identical one on the host needs no download at all.
+    let to_fetch = match (&local, probe.helper.source, probe.triple.as_deref()) {
+        (None, Some(HelperSource::Release), Some(triple)) => release_helper_for(triple),
+        _ => None,
+    };
+    let expected_sha = local
+        .as_ref()
+        .map(|local| local.sha256.as_str())
+        .or(to_fetch.as_ref().map(|release| release.sha256.as_str()));
     // Same bytes already there (or nothing to compare with, and the right version): reuse it.
-    let same = match (&probe.installed, &local) {
-        (Some(installed), Some(local)) => {
-            installed.sha256.as_deref() == Some(local.sha256.as_str())
-        }
+    let same = match (&probe.installed, expected_sha) {
+        (Some(installed), Some(sha)) => installed.sha256.as_deref() == Some(sha),
         (Some(installed), None) => installed.current,
         _ => false,
     };
@@ -835,15 +960,22 @@ async fn ensure_helper<R: Runtime>(
             &probe.missing_libs,
         ));
     }
-    let Some(local) = local else {
+    if local.is_none() && to_fetch.is_none() {
         return Err(probe
             .helper
             .reason
             .clone()
             .unwrap_or_else(|| "There is no helper to install on this host.".into()));
-    };
+    }
     let Some(hash) = hash else {
         return Err("The host has neither sha256sum nor shasum, so the copy cannot be checked. Install coreutils there and try again.".into());
+    };
+    let local = match (local, to_fetch) {
+        (Some(local), _) => local,
+        (None, Some(release)) => {
+            fetch_release_helper(app, &endpoint.host, &release, cancel).await?
+        }
+        (None, None) => unreachable!("handled above"),
     };
     let file = tokio::fs::File::open(&local.path)
         .await
@@ -1399,6 +1531,159 @@ OLEAFLY_PROBE missing libwebkit2gtk-4.1.so.0
         assert!(helper.reason.unwrap().contains("FreeBSD amd64"));
     }
 
+    /// A release manifest for tests: a helper for x86_64 Linux only.
+    fn release_manifest() -> Manifest {
+        let line = crate::remote_commands::daemon_version_line();
+        let version = env!("CARGO_PKG_VERSION");
+        let json = format!(
+            r#"{{"version":"{version}","line":"{line}","targets":{{"x86_64-unknown-linux-gnu":{{"asset":"oleafly-remoted-{version}-x86_64-unknown-linux-gnu","size":4096,"sha256":"{}"}}}}}}"#,
+            "c".repeat(64)
+        );
+        Manifest::parse(&json, version, &line).unwrap()
+    }
+
+    fn some_helper(source: HelperSource) -> LocalHelper {
+        LocalHelper {
+            path: PathBuf::from("/data/remote-daemons/x/oleafly-remoted"),
+            sha256: "d".repeat(64),
+            size: 10,
+            source,
+        }
+    }
+
+    #[test]
+    fn a_release_helper_is_offered_as_a_download_when_no_file_is_on_this_computer() {
+        let manifest = release_manifest();
+        let (plan, local) = plan_with(
+            Some("x86_64-unknown-linux-gnu"),
+            Some("glibc"),
+            "Linux",
+            "x86_64",
+            |pinned| {
+                assert!(pinned.is_some(), "the lookup is told what the release pins");
+                None
+            },
+            Some(&manifest),
+        );
+        assert!(local.is_none());
+        assert!(plan.available && plan.reason.is_none());
+        assert_eq!(plan.size, Some(4096));
+        assert_eq!(plan.source, Some(HelperSource::Release));
+        // A file the user provided wins, and nothing is downloaded.
+        let (plan, local) = plan_with(
+            Some("x86_64-unknown-linux-gnu"),
+            None,
+            "Linux",
+            "x86_64",
+            |_| Some(some_helper(HelperSource::Provided)),
+            Some(&manifest),
+        );
+        assert_eq!(plan.source, Some(HelperSource::Provided));
+        assert_eq!(local.unwrap().size, 10);
+    }
+
+    #[test]
+    fn no_helper_still_says_so_and_names_the_way_out() {
+        let manifest = release_manifest();
+        let nothing = |_: Option<&ReleaseHelper>| None;
+        // A development build: no manifest at all.
+        let (plan, local) = plan_with(
+            Some("aarch64-unknown-linux-gnu"),
+            None,
+            "Linux",
+            "aarch64",
+            nothing,
+            None,
+        );
+        let reason = plan.reason.clone().unwrap();
+        assert!(!plan.available && local.is_none() && plan.source.is_none() && plan.size.is_none());
+        assert!(reason.contains("This copy of Oleafly has no helper for Linux aarch64"));
+        assert!(reason.contains("remote-daemons/aarch64-unknown-linux-gnu/oleafly-remoted"));
+        assert!(reason.contains("build it on the host"));
+        // A release that carries x86_64 only, asked about an ARM host and a Mac.
+        for (triple, os, arch) in [
+            ("aarch64-unknown-linux-gnu", "Linux", "aarch64"),
+            ("aarch64-apple-darwin", "Darwin", "arm64"),
+        ] {
+            let (plan, _) = plan_with(Some(triple), None, os, arch, nothing, Some(&manifest));
+            let reason = plan.reason.unwrap();
+            assert!(!plan.available);
+            assert!(
+                reason.contains("carries helpers for x86_64-unknown-linux-gnu"),
+                "{reason}"
+            );
+            assert!(reason.contains(&format!("remote-daemons/{triple}/oleafly-remoted")));
+        }
+        // musl is refused for its own reason even though the release has a Linux helper.
+        let (plan, _) = plan_with(
+            Some("x86_64-unknown-linux-gnu"),
+            Some("musl"),
+            "Linux",
+            "x86_64",
+            nothing,
+            Some(&manifest),
+        );
+        assert!(!plan.available && plan.reason.unwrap().contains("musl"));
+        // And a system with no target at all.
+        let (plan, _) = plan_with(None, None, "FreeBSD", "amd64", nothing, Some(&manifest));
+        assert!(plan.reason.unwrap().contains("FreeBSD amd64"));
+    }
+
+    fn elf_for(machine: u8) -> Vec<u8> {
+        let mut elf = vec![0u8; 64];
+        elf[..4].copy_from_slice(&[0x7f, b'E', b'L', b'F']);
+        elf[4] = 2;
+        elf[5] = 1;
+        elf[18] = machine;
+        elf
+    }
+
+    #[test]
+    fn a_downloaded_file_counts_only_when_it_is_the_pinned_one() {
+        let triple = "x86_64-unknown-linux-gnu";
+        let root = tempfile::tempdir().unwrap();
+        let version = env!("CARGO_PKG_VERSION");
+        let dir = helper_release::install_dir(root.path(), triple, version);
+        std::fs::create_dir_all(&dir).unwrap();
+        let elf = elf_for(0x3e);
+        std::fs::write(dir.join(HELPER_NAME), &elf).unwrap();
+        let (sha256, size) = hash_file(&dir.join(HELPER_NAME)).unwrap();
+        let pinned = |sha256: &str, size: u64| ReleaseHelper {
+            triple: triple.into(),
+            asset: format!("oleafly-remoted-{version}-{triple}"),
+            size,
+            sha256: sha256.into(),
+        };
+        let candidates = helper_candidates(root.path(), triple, None);
+        let found = find_acceptable_helper(&candidates, triple, Some(&pinned(&sha256, size)));
+        assert_eq!(found.unwrap().source, HelperSource::Downloaded);
+        assert_eq!(
+            find_acceptable_helper(&candidates, triple, Some(&pinned(&"0".repeat(64), size))),
+            None,
+            "a file with another digest is fetched again"
+        );
+        assert_eq!(
+            find_acceptable_helper(&candidates, triple, Some(&pinned(&sha256, size + 1))),
+            None,
+            "and one of another size"
+        );
+        assert_eq!(
+            find_acceptable_helper(&candidates, triple, None),
+            None,
+            "a build that pins nothing does not trust a file it did not fetch"
+        );
+        // A file in the folder of another version is not looked at.
+        let other = helper_release::install_dir(root.path(), triple, "0.0.1");
+        std::fs::create_dir_all(&other).unwrap();
+        std::fs::write(other.join(HELPER_NAME), &elf).unwrap();
+        assert!(candidates.iter().all(|(path, _)| !path.starts_with(&other)));
+        // One put there on purpose is taken as it is, and wins.
+        let provided = root.path().join("remote-daemons").join(triple);
+        std::fs::write(provided.join(HELPER_NAME), elf_for(0x3e)).unwrap();
+        let found = find_acceptable_helper(&candidates, triple, None).unwrap();
+        assert_eq!(found.source, HelperSource::Provided);
+    }
+
     #[test]
     fn an_installed_helper_counts_only_when_version_and_protocol_match() {
         let expected = crate::remote_commands::daemon_version_line();
@@ -1546,8 +1831,13 @@ OLEAFLY_PROBE missing libwebkit2gtk-4.1.so.0
         let Some(own) = local_triple() else { return };
         let candidates =
             helper_candidates(Path::new("/data"), own, Some(Path::new("/app/bin/oleafly")));
-        assert_eq!(candidates.len(), 2);
+        assert_eq!(candidates.len(), 3);
         assert_eq!(candidates[1].0, Path::new("/app/bin/oleafly-remoted"));
+        assert_eq!(
+            candidates[2].1,
+            HelperSource::Downloaded,
+            "a fetched file comes last"
+        );
         let other = if own.starts_with("x86_64") {
             "aarch64-unknown-linux-gnu"
         } else {
@@ -1560,7 +1850,8 @@ OLEAFLY_PROBE missing libwebkit2gtk-4.1.so.0
                 Some(Path::new("/app/bin/oleafly"))
             )
             .len(),
-            1
+            2,
+            "no file next to the app for another kind of host"
         );
     }
 

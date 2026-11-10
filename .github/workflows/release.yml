@@ -41,6 +41,7 @@ env:
 jobs:
   build:
     name: ${{ matrix.name }}
+    needs: remoted-manifest
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -87,6 +88,24 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
+
+      # The remote helpers' sizes and digests go into the app itself, so the
+      # helper the app downloads on first use can be checked against values
+      # that ship inside the signed app, not against the release it came from.
+      # Read at compile time by src-tauri/src/remote_bridge/helper_release.rs.
+      - name: Hand the remote helper manifest to the app build
+        uses: actions/download-artifact@v8
+        with:
+          name: remoted-manifest
+          path: remoted-manifest
+
+      - name: Set OLEAFLY_REMOTED_MANIFEST
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest="$(jq -c . remoted-manifest/oleafly-remoted-manifest.json)"
+          echo "OLEAFLY_REMOTED_MANIFEST=$manifest" >> "$GITHUB_ENV"
+          echo "$manifest"
 
       # xdg-utils: with a deep-link scheme in tauri.conf.json the AppImage
       # bundler runs /usr/bin/xdg-mime, which the ARM images do not ship.
@@ -585,6 +604,210 @@ jobs:
           done
           exit 0
 
+  # The helper that runs terminals, agents and builds on a remote Linux host
+  # (docs/spike-remote-daemon.md, phase 7). An installed app has no Linux build
+  # of its own to offer, so the release carries one per Linux target and the app
+  # downloads it on first use. The app is built with the helpers' sizes and
+  # SHA-256 digests (OLEAFLY_REMOTED_MANIFEST, below), which is what makes that
+  # download checkable: a changed release asset does not match the digest inside
+  # the signed app.
+  #
+  # Built on the oldest Ubuntu image, because the build host's glibc is the
+  # oldest a host can have. The helper links webkit2gtk and gtk (it runs the
+  # app's own commands on Tauri's mock runtime), so a host also needs
+  # libwebkit2gtk-4.1 and libgtk-3; the wizard checks for them. 22.04 is the
+  # first Ubuntu with webkit2gtk 4.1 anyway.
+  remoted:
+    name: Remote helper (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Install Linux system dependencies (Tauri)
+        run: |
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            build-essential \
+            curl wget file
+
+      - name: Install Rust toolchain
+        uses: ./.github/actions/rust-toolchain
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: . -> src-tauri/target
+          key: remoted-${{ matrix.target }}
+
+      # The helper needs neither the compilers nor the web app that the desktop
+      # build bundles. Tauri's build script still wants the sidecar files and a
+      # frontend folder to exist, so empty ones stand in; the helper does not
+      # embed them.
+      - name: Stand in for the files Tauri's build script checks
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          for tool in tectonic tectonic-biber pandoc typst; do
+            : > "src-tauri/binaries/$tool-$TARGET"
+          done
+          mkdir -p dist
+          echo '<!doctype html><title>oleafly-remoted</title>' > dist/index.html
+
+      - name: Build
+        env:
+          TARGET: ${{ matrix.target }}
+        run: cargo build --release --locked -p oleafly --features remote-spike --bin oleafly-remoted --target "$TARGET"
+
+      - name: Check the version and describe what the host needs
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          REF: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          bin="src-tauri/target/$TARGET/release/oleafly-remoted"
+          # "oleafly-remoted <version> protocol <n>": the line the app compares
+          # with what it expects from a helper on a host.
+          line="$("$bin" --version | head -n 1)"
+          echo "The helper reports: $line"
+          helper_version="$(awk '{print $2}' <<<"$line")"
+          case "$REF" in
+            v*)
+              if [ "$helper_version" != "${REF#v}" ]; then
+                echo "::error::The tag says ${REF#v} but the helper reports $helper_version. Tag the commit whose tauri.conf.json has that version."
+                exit 1
+              fi
+              ;;
+          esac
+          # The oldest glibc a host can have, and the libraries it needs besides.
+          echo "Highest glibc symbol: $(objdump -T "$bin" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -n 1)"
+          ldd "$bin" | awk '{print $1}' | sort
+
+          asset="oleafly-remoted-$helper_version-$TARGET"
+          mkdir -p helper
+          cp "$bin" "helper/$asset"
+          chmod +x "helper/$asset"
+          jq -n --arg target "$TARGET" --arg asset "$asset" --arg line "$line" \
+            --argjson size "$(stat -c %s "helper/$asset")" \
+            --arg sha256 "$(sha256sum "helper/$asset" | awk '{print $1}')" \
+            '{target: $target, asset: $asset, line: $line, size: $size, sha256: $sha256}' \
+            > "helper/fragment-$TARGET.json"
+          cat "helper/fragment-$TARGET.json"
+
+      - name: Keep the helper for the release
+        uses: actions/upload-artifact@v7
+        with:
+          name: remoted-${{ matrix.target }}
+          path: helper/
+          if-no-files-found: error
+          retention-days: 7
+
+  # Joins the per-target results into the manifest the app is built with. Both
+  # targets must be present, with the same version line, or the app would be
+  # built believing in a helper the release does not carry.
+  remoted-manifest:
+    name: Remote helper manifest
+    needs: remoted
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+      - name: Download the helpers
+        uses: actions/download-artifact@v8
+        with:
+          pattern: remoted-*-linux-gnu
+          path: remoted
+          merge-multiple: true
+
+      - name: Write the manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -l remoted
+          for target in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; do
+            test -s "remoted/fragment-$target.json" || { echo "::error::no helper was built for $target"; exit 1; }
+          done
+          jq -s -e '
+            (map(.line) | unique | length) == 1 and (map(.target) | unique | length) == length
+          ' remoted/fragment-*.json >/dev/null \
+            || { echo "::error::the helpers disagree about their version line, or a target is repeated"; exit 1; }
+          mkdir -p manifest
+          # version is the second word of the line: "oleafly-remoted <version> protocol <n>".
+          jq -s -c '{
+            version: (.[0].line | split(" ")[1]),
+            line: .[0].line,
+            targets: (map({key: .target, value: {asset, size, sha256}}) | from_entries)
+          }' remoted/fragment-*.json > manifest/oleafly-remoted-manifest.json
+          cat manifest/oleafly-remoted-manifest.json
+
+      - name: Keep the manifest for the app build
+        uses: actions/upload-artifact@v7
+        with:
+          name: remoted-manifest
+          path: manifest/oleafly-remoted-manifest.json
+          if-no-files-found: error
+          retention-days: 7
+
+  # Attaches the helpers and their checksums to the draft release once the
+  # build legs have created it. The files are attested here, in this workflow,
+  # because release-metadata verifies every asset against release.yml.
+  remoted-assets:
+    name: Attach the remote helpers
+    needs: [build, remoted]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Download the helpers
+        uses: actions/download-artifact@v8
+        with:
+          pattern: remoted-*-linux-gnu
+          path: remoted
+          merge-multiple: true
+
+      - name: Checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets
+          cp remoted/oleafly-remoted-*-linux-gnu assets/
+          (cd assets && sha256sum oleafly-remoted-*-linux-gnu > oleafly-remoted-SHA256SUMS && cat oleafly-remoted-SHA256SUMS)
+          test "$(wc -l < assets/oleafly-remoted-SHA256SUMS)" -eq 2
+
+      - name: Attest the helpers
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: assets/*
+
+      - name: Attach them to the draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload "$TAG" assets/* --repo "$GITHUB_REPOSITORY" --clobber
+
   # Each tauri-action leg produces a complete latest.json candidate by merging
   # the release's current manifest. Those read/delete/upload operations are not
   # atomic across a matrix, so the last writer can otherwise lose a concurrent
@@ -674,7 +897,7 @@ jobs:
 
   release-metadata:
     name: Attach and verify release supply-chain metadata
-    needs: [build, finalize-updater]
+    needs: [build, finalize-updater, remoted-assets]
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -719,7 +942,9 @@ jobs:
             gh attestation verify "$asset" --repo "$GITHUB_REPOSITORY" \
               --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"
             case "$asset" in
-              *.spdx.json|*/latest.json) ;;
+              # The remote helpers are attested for provenance by the
+              # remoted-assets job; they have no SBOM of their own.
+              *.spdx.json|*/latest.json|*/oleafly-remoted-*) ;;
               *)
                 gh attestation verify "$asset" --repo "$GITHUB_REPOSITORY" \
                   --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
@@ -739,7 +964,7 @@ jobs:
   # for the same tag with "Publish the release" checked.
   publish:
     name: Publish (all platforms present)
-    needs: [build, finalize-updater, release-metadata]
+    needs: [build, finalize-updater, remoted-assets, release-metadata]
     if: ${{ inputs.publish == true }}
     runs-on: ubuntu-22.04
     permissions:
@@ -766,6 +991,9 @@ jobs:
           grep -qE '_(amd64|x86_64)\.deb$'   <<<"$assets" || missing+=("Linux x86_64 .deb")
           grep -qE '_(arm64|aarch64)\.deb$'  <<<"$assets" || missing+=("Linux ARM64 .deb")
           grep -qE '^latest\.json$'          <<<"$assets" || missing+=("latest.json")
+          grep -qx "oleafly-remoted-SHA256SUMS" <<<"$assets" || missing+=("remote helper checksums")
+          grep -qE '^oleafly-remoted-.*-x86_64-unknown-linux-gnu$'  <<<"$assets" || missing+=("remote helper for Linux x86_64")
+          grep -qE '^oleafly-remoted-.*-aarch64-unknown-linux-gnu$' <<<"$assets" || missing+=("remote helper for Linux ARM64")
           for target in $RELEASE_TARGETS; do
             grep -qx "Oleafly-${TAG}-${target}.spdx.json" <<<"$assets" \
               || missing+=("${target} SBOM")
@@ -803,7 +1031,7 @@ jobs:
   # artifact and updater-feed checks as a publish - it just never flips live.
   draft-ready:
     name: Draft is complete (not published)
-    needs: [build, finalize-updater, release-metadata]
+    needs: [build, finalize-updater, remoted-assets, release-metadata]
     if: ${{ always() && inputs.publish != true }}
     runs-on: ubuntu-22.04
     permissions:
@@ -820,8 +1048,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ needs.build.result }}" != "success" ] || [ "${{ needs['finalize-updater'].result }}" != "success" ] || [ "${{ needs['release-metadata'].result }}" != "success" ]; then
-            echo "build, updater finalization, or release metadata did not succeed; the draft is incomplete" >&2
+          if [ "${{ needs.build.result }}" != "success" ] || [ "${{ needs['finalize-updater'].result }}" != "success" ] || [ "${{ needs['remoted-assets'].result }}" != "success" ] || [ "${{ needs['release-metadata'].result }}" != "success" ]; then
+            echo "build, updater finalization, remote helpers, or release metadata did not succeed; the draft is incomplete" >&2
             exit 1
           fi
           assets="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
@@ -835,6 +1063,9 @@ jobs:
           grep -qE '_(amd64|x86_64)\.deb$'   <<<"$assets" || missing+=("Linux x86_64 .deb")
           grep -qE '_(arm64|aarch64)\.deb$'  <<<"$assets" || missing+=("Linux ARM64 .deb")
           grep -qE '^latest\.json$'          <<<"$assets" || missing+=("latest.json")
+          grep -qx "oleafly-remoted-SHA256SUMS" <<<"$assets" || missing+=("remote helper checksums")
+          grep -qE '^oleafly-remoted-.*-x86_64-unknown-linux-gnu$'  <<<"$assets" || missing+=("remote helper for Linux x86_64")
+          grep -qE '^oleafly-remoted-.*-aarch64-unknown-linux-gnu$' <<<"$assets" || missing+=("remote helper for Linux ARM64")
           for target in $RELEASE_TARGETS; do
             grep -qx "Oleafly-${TAG}-${target}.spdx.json" <<<"$assets" \
               || missing+=("${target} SBOM")
@@ -852,8 +1083,8 @@ jobs:
 
   guard-incomplete:
     name: Keep an incomplete release unpublished
-    needs: [build, finalize-updater, release-metadata, publish]
-    if: always() && inputs.publish == true && (needs.build.result != 'success' || needs['finalize-updater'].result != 'success' || needs['release-metadata'].result != 'success' || needs.publish.result != 'success')
+    needs: [build, finalize-updater, remoted-assets, release-metadata, publish]
+    if: always() && inputs.publish == true && (needs.build.result != 'success' || needs['finalize-updater'].result != 'success' || needs['remoted-assets'].result != 'success' || needs['release-metadata'].result != 'success' || needs.publish.result != 'success')
     runs-on: ubuntu-22.04
     permissions:
       contents: write

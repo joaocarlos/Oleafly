@@ -149,6 +149,34 @@ describe("RemoteProjectDialog", () => {
     expect(setup.installHelper).toHaveBeenCalledExactlyOnceWith({ host: "lab", user: null, port: null });
   });
 
+  it("tells the user a helper that is not on this computer is downloaded first, and shows that download", async () => {
+    let report: (progress: { host: string; phase: string; sent: number; total: number }) => void = () => {};
+    setup.onSetupProgress.mockImplementation(async (handler: typeof report) => {
+      report = handler;
+      return () => {};
+    });
+    setup.probeHost.mockResolvedValue(
+      ready({ installed: null, helper: { available: true, size: 60 * 1024 * 1024, source: "release", reason: null } }),
+    );
+    setup.installHelper.mockReturnValue(new Promise(() => {}));
+    renderDialog();
+    await connectTo("lab");
+    expect(await screen.findByTestId("remote-helper-download-note")).toHaveTextContent(/download it from this version's release on GitHub/);
+    expect(screen.getByText("Size: 60 MB")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("remote-helper-install"));
+    await waitFor(() => expect(setup.installHelper).toHaveBeenCalled());
+    report({ host: "lab", phase: "download", sent: 30 * 1024 * 1024, total: 60 * 1024 * 1024 });
+    expect((await screen.findAllByText("Downloading the helper: 30 MB of 60 MB")).length).toBeGreaterThan(0);
+  });
+
+  it("does not mention a download when the helper comes from a file on this computer", async () => {
+    setup.probeHost.mockResolvedValue(ready({ installed: null }));
+    renderDialog();
+    await connectTo("lab");
+    await screen.findByTestId("remote-helper-install");
+    expect(screen.queryByTestId("remote-helper-download-note")).not.toBeInTheDocument();
+  });
+
   it("warns about missing libraries with the command to run, and checks again on request", async () => {
     setup.probeHost.mockResolvedValue(ready({ installed: null, missingLibs: ["libwebkit2gtk-4.1.so.0"] }));
     renderDialog();

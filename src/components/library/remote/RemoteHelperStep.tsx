@@ -94,6 +94,11 @@ export function RemoteHelperStep({
         </p>
       ) : probe.helper.available ? (
         <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+          {probe.helper.source === "release" ? (
+            <p className="text-sm leading-relaxed" data-testid="remote-helper-download-note">
+              {t(($) => $.library.remote.helper.downloadBody)}
+            </p>
+          ) : null}
           <p className="text-sm leading-relaxed">
             {t(($) => $.library.remote.helper.installBody, { dir: probe.helperDir, host: label })}
           </p>
@@ -131,14 +136,19 @@ export function RemoteHelperStep({
         <div className="flex flex-col gap-2" aria-live="polite" data-testid="remote-helper-progress">
           <Progress
             value={percent}
-            indeterminate={phase !== "upload" || !progress || progress.total === 0}
-            label={t(($) => $.library.remote.helper.copying, {
+            indeterminate={(phase !== "upload" && phase !== "download") || !progress || progress.total === 0}
+            label={t(($) => (phase === "download" ? $.library.remote.helper.downloading : $.library.remote.helper.copying), {
               sent: formatBytes(progress?.sent ?? 0),
               total: formatBytes(progress?.total ?? 0),
             })}
           />
           <p className="text-xs text-muted-foreground">
-            {phase === "upload" && progress
+            {phase === "download" && progress
+              ? t(($) => $.library.remote.helper.downloading, {
+                  sent: formatBytes(progress.sent),
+                  total: formatBytes(progress.total),
+                })
+              : phase === "upload" && progress
               ? t(($) => $.library.remote.helper.copying, {
                   sent: formatBytes(progress.sent),
                   total: formatBytes(progress.total),

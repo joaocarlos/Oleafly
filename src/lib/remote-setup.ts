@@ -32,7 +32,7 @@ export interface HostProbe {
   helper: {
     available: boolean;
     size: number | null;
-    source: "provided" | "nextToApp" | null;
+    source: "provided" | "nextToApp" | "downloaded" | "release" | null;
     reason: string | null;
   };
   version: string;
@@ -70,7 +70,7 @@ export interface DirListing {
 
 export interface SetupProgress {
   host: string;
-  phase: "check" | "upload" | "verify" | "done";
+  phase: "check" | "download" | "upload" | "verify" | "done";
   sent: number;
   total: number;
 }
