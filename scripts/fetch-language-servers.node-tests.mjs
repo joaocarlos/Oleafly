@@ -942,6 +942,21 @@ test("every clean CI and release Tauri build fetches only pinned Tinymist", asyn
       );
       if (buildIndex === -1) continue;
       if (job.source.includes("OLEAFLY_E2E_APP_BINARY")) continue;
+      // The remote helper job builds one binary, `oleafly-remoted`, and bundles nothing: no
+      // installer, no resources, so no language server to confine. Only that shape is exempt.
+      if (name === "release" && job.id === "remoted") {
+        assert.match(
+          job.source,
+          /cargo build [^\n]*--bin oleafly-remoted\b/,
+          "release/remoted must build only the helper binary",
+        );
+        assert.doesNotMatch(
+          job.source,
+          tauriActionPattern,
+          "release/remoted must not run tauri-action",
+        );
+        continue;
+      }
       const fetchIndex = job.source.indexOf(
         "run: node scripts/fetch-language-servers.mjs --server tinymist",
       );
