@@ -39,6 +39,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `pdf-engine: tectonic` without saying it only runs when code is allowed in
   the project, so following them with code off ended in another error.
 
+## [0.4.99] - 2026-11-12
+
+### Changed
+
+- A test of the release pipeline on a fork, with the remote helper jobs and the remote workspace feature turned on. Not a real release.
+
 ## [0.4.11] - 2026-11-07
 
 ### Thanks

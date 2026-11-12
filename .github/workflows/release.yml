@@ -426,7 +426,7 @@ jobs:
           # Retries handle transient delete/upload conflicts; the finalize job
           # below performs a deterministic target-owned merge before release.
           retryAttempts: 3
-          args: ${{ matrix.args }} ${{ env.TAURI_SIGN_ARGS }} ${{ env.TAURI_BUNDLE_ARGS }}
+          args: ${{ matrix.args }} ${{ env.TAURI_SIGN_ARGS }} ${{ env.TAURI_BUNDLE_ARGS }} --features remote-bridge
 
       # Work with byte-for-byte copies of the files tauri-action uploaded to
       # the draft release. This keeps provenance and SBOM subjects aligned with
