@@ -106,6 +106,9 @@ jobs:
           manifest="$(jq -c . remoted-manifest/oleafly-remoted-manifest.json)"
           echo "OLEAFLY_REMOTED_MANIFEST=$manifest" >> "$GITHUB_ENV"
           echo "$manifest"
+          # The app fetches the helper from the release of the repository that built it, so a fork's
+          # release finds its own helpers (and the upstream release, its own).
+          echo "OLEAFLY_REMOTED_RELEASE_BASE=https://github.com/$GITHUB_REPOSITORY/releases/download" >> "$GITHUB_ENV"
 
       # xdg-utils: with a deep-link scheme in tauri.conf.json the AppImage
       # bundler runs /usr/bin/xdg-mime, which the ARM images do not ship.

@@ -22,8 +22,13 @@ use serde::Deserialize;
 
 /// What the release build embedded, if it did.
 const EMBEDDED_MANIFEST: Option<&str> = option_env!("OLEAFLY_REMOTED_MANIFEST");
-/// Release assets are served from here, tagged `v<app version>`.
-const RELEASE_BASE: &str = "https://github.com/Oleafly/Oleafly/releases/download";
+/// Release assets are served from here, tagged `v<app version>`. The release workflow sets
+/// `OLEAFLY_REMOTED_RELEASE_BASE` to the repository that builds the app, so a fork's release finds
+/// its own helpers; a build without it uses the upstream release.
+const RELEASE_BASE: &str = match option_env!("OLEAFLY_REMOTED_RELEASE_BASE") {
+    Some(base) => base,
+    None => "https://github.com/Oleafly/Oleafly/releases/download",
+};
 /// github.com answers with a redirect to one of the other two.
 const ALLOWED_HOSTS: [&str; 3] = [
     "github.com",

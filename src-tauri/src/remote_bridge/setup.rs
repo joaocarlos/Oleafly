@@ -2216,12 +2216,25 @@ OLEAFLY_DIR dir a/b
                 .ok()
                 .and_then(|p| p.parse().ok()),
         };
-        let helper = PathBuf::from(var("REMOTE_SETUP_HELPER"));
+        // Without REMOTE_SETUP_HELPER the helper must come from the release this build pinned
+        // (a build given OLEAFLY_REMOTED_MANIFEST and OLEAFLY_REMOTED_RELEASE_BASE): the app then
+        // downloads it itself, as an installed one does.
+        let helper = std::env::var("REMOTE_SETUP_HELPER").ok().map(PathBuf::from);
         with_data_dir("setup-e2e", |root| {
-            let triple = local_triple().expect("run this on a Mac or a Linux machine");
-            let provided = root.join("remote-daemons").join(triple);
-            std::fs::create_dir_all(&provided).unwrap();
-            std::fs::copy(&helper, provided.join(HELPER_NAME)).unwrap();
+            // The helper must be built for the host's kind; by default that is this computer's own.
+            let triple_owned = std::env::var("REMOTE_SETUP_TRIPLE")
+                .ok()
+                .or_else(|| local_triple().map(str::to_owned))
+                .expect("set REMOTE_SETUP_TRIPLE, or run this on a Mac or a Linux machine");
+            let triple = triple_owned.as_str();
+            // A folder on the host for the project; make it one the test may leave behind.
+            let folder =
+                std::env::var("REMOTE_SETUP_FOLDER").unwrap_or_else(|_| "~/papers/e2e".into());
+            if let Some(helper) = &helper {
+                let provided = root.join("remote-daemons").join(triple);
+                std::fs::create_dir_all(&provided).unwrap();
+                std::fs::copy(helper, provided.join(HELPER_NAME)).unwrap();
+            }
 
             let app = tauri::test::mock_builder()
                 .manage(RemoteBridge::default())
@@ -2252,22 +2265,33 @@ OLEAFLY_DIR dir a/b
                 let cancel = CancellationToken::new();
 
                 // 1. A host nobody has trusted yet: the wizard is told its key, and nothing else happens.
-                let unknown = probe_host(&ctx, &endpoint, &cancel).await.unwrap_err();
-                let ProbeOutcome::HostKey { keys, changed, .. } = unknown else {
-                    panic!("expected the host key question, got {unknown:?}");
-                };
-                assert!(!changed && !keys.is_empty());
-                println!("host keys offered: {keys:?}");
-                let fingerprints: Vec<String> = keys.iter().map(|k| k.fingerprint.clone()).collect();
-                host_keys::trust(&ctx, &endpoint, &fingerprints, &cancel).await.unwrap();
+                // (A host whose key ssh already knows goes straight on.)
+                match probe_host(&ctx, &endpoint, &cancel).await {
+                    Err(ProbeOutcome::HostKey { keys, changed, .. }) => {
+                        assert!(!changed && !keys.is_empty());
+                        println!("host keys offered: {keys:?}");
+                        let fingerprints: Vec<String> = keys.iter().map(|k| k.fingerprint.clone()).collect();
+                        host_keys::trust(&ctx, &endpoint, &fingerprints, &cancel).await.unwrap();
+                    }
+                    Err(other) => panic!("expected the host key question, got {other:?}"),
+                    Ok(_) => println!("the host's key was already known"),
+                }
 
                 // 2. Looked at: this host's system, no helper yet, and one this app can install.
                 let (probe, local, _) = probe_host(&ctx, &endpoint, &cancel).await.unwrap();
                 println!("probe: {probe:#?}");
                 assert_eq!(probe.triple.as_deref(), Some(triple));
                 assert!(probe.installed.is_none(), "the scratch home starts empty");
-                assert!(probe.helper.available && local.is_some());
+                assert!(probe.helper.available);
+                match &helper {
+                    Some(_) => assert!(local.is_some() && probe.helper.source == Some(HelperSource::Provided)),
+                    None => assert!(local.is_none() && probe.helper.source == Some(HelperSource::Release), "{:?}", probe.helper),
+                }
                 assert!(probe.home.starts_with('/'));
+                let expected_sha = match &local {
+                    Some(local) => local.sha256.clone(),
+                    None => release_helper_for(triple).expect("the build pins a helper for this target").sha256,
+                };
 
                 // 3. Installed, checked on the host, and reported while it goes.
                 let report = ensure_helper(&handle, &ctx, &endpoint, &cancel).await.unwrap();
@@ -2286,7 +2310,7 @@ OLEAFLY_DIR dir a/b
                 let (probe, _, _) = probe_host(&ctx, &endpoint, &cancel).await.unwrap();
                 let installed = probe.installed.clone().expect("installed now");
                 assert!(installed.current, "{installed:?}");
-                assert_eq!(installed.sha256.as_deref(), local.as_ref().map(|l| l.sha256.as_str()));
+                assert_eq!(installed.sha256.as_deref(), Some(expected_sha.as_str()));
 
                 // 5. A damaged copy on the host is replaced, not trusted.
                 run_script(
@@ -2302,10 +2326,10 @@ OLEAFLY_DIR dir a/b
                 let home = parse_listing(&run_script(&host, list_script("~")).await.unwrap(), "~");
                 assert_eq!((home.state, home.path.as_str()), (DirState::Ok, probe.home.as_str()));
                 assert!(too_broad(&home.path, &probe.home));
-                let made = parse_listing(&run_script(&host, make_dir_script("~/papers/e2e")).await.unwrap(), "");
-                assert_eq!(made.path, format!("{}/papers/e2e", probe.home));
+                let made = parse_listing(&run_script(&host, make_dir_script(&folder)).await.unwrap(), "");
+                assert_eq!(made.path, folder.replacen('~', &probe.home, 1));
                 run_script(&host, format!("printf '\\documentclass{{article}}\\begin{{document}}Hi\\end{{document}}\n' > '{}/paper.tex'\n", made.path)).await.unwrap();
-                let listing = parse_listing(&run_script(&host, list_script("~/papers/e2e")).await.unwrap(), "");
+                let listing = parse_listing(&run_script(&host, list_script(&folder)).await.unwrap(), "");
                 assert!(listing.has_tex && listing.writable && !listing.has_git, "{listing:?}");
 
                 // 7. The refusals leave nothing behind.
@@ -2322,7 +2346,7 @@ OLEAFLY_DIR dir a/b
                 let data_dir = host_paths(&probe.home).1;
                 run_script(&host, format!("mkdir -p '{data_dir}' && chmod 500 '{data_dir}'\n")).await.unwrap();
                 let started = std::time::Instant::now();
-                let broken = create_project_on_host(&handle, &bridge, CreateRequest { host: host.clone(), path: "~/papers/e2e".into(), name: "x".into(), create_folder: false }).await;
+                let broken = create_project_on_host(&handle, &bridge, CreateRequest { host: host.clone(), path: folder.clone(), name: "x".into(), create_folder: false }).await;
                 let failure = broken.expect_err("the helper cannot open its lock");
                 println!("create failed after {:?}: {failure}", started.elapsed());
                 assert!(started.elapsed() < Duration::from_secs(20), "failing waited for the 30 second timeout");
@@ -2336,7 +2360,7 @@ OLEAFLY_DIR dir a/b
                 run_script(&host, format!("chmod 700 '{data_dir}'\n")).await.unwrap();
 
                 // 8. The project: a real call reaches the host's helper, and the folder is the host's.
-                let created = create_project_on_host(&handle, &bridge, CreateRequest { host: host.clone(), path: "~/papers/e2e".into(), name: "  E2E paper ".into(), create_folder: false }).await.unwrap();
+                let created = create_project_on_host(&handle, &bridge, CreateRequest { host: host.clone(), path: folder.clone(), name: "  E2E paper ".into(), create_folder: false }).await.unwrap();
                 let id = created.project_id;
                 let binding = binding_for(&id).unwrap();
                 assert_eq!((binding.path.as_str(), binding.persistent), (made.path.as_str(), true));
@@ -2354,6 +2378,84 @@ OLEAFLY_DIR dir a/b
 
                 // Cleanup: stop the helper's daemon.
                 let _ = run_script(&host, format!("OLEAFLY_DATA_DIR='{}' '{}' --stop\n", binding.data_dir, binding.binary)).await;
+            });
+        });
+    }
+
+    /// The probe and the folder scripts against a real host, with nothing installed there: it reads
+    /// the system, lists the home folder, and makes and removes one empty folder under
+    /// `~/oleafly-scratch`. The host's key must already be known to ssh.
+    ///
+    /// ```text
+    /// REMOTE_SETUP_HOST=my-host cargo test -p oleafly --features remote-spike,remote-bridge --lib \
+    ///   remote_bridge::setup::tests::reads_a_real_host -- --ignored --nocapture
+    /// ```
+    #[test]
+    #[ignore = "needs an ssh host"]
+    fn reads_a_real_host_and_leaves_nothing_behind() {
+        let host = HostArg {
+            host: std::env::var("REMOTE_SETUP_HOST").expect("set REMOTE_SETUP_HOST"),
+            user: std::env::var("REMOTE_SETUP_USER").ok(),
+            port: std::env::var("REMOTE_SETUP_PORT")
+                .ok()
+                .and_then(|p| p.parse().ok()),
+        };
+        with_data_dir("setup-real-host", |_| {
+            let runtime = tokio::runtime::Runtime::new().unwrap();
+            runtime.block_on(async {
+                let endpoint = host.endpoint().unwrap();
+                let ctx = ssh_context().unwrap();
+                let cancel = CancellationToken::new();
+                let (probe, _, hash) = match probe_host(&ctx, &endpoint, &cancel).await {
+                    Ok(found) => found,
+                    Err(outcome) => panic!("the probe did not get an answer: {outcome:?}"),
+                };
+                println!("probe: {probe:#?}\nhash tool: {hash:?}");
+                assert!(!probe.home.is_empty() && hash.is_some());
+
+                let listing =
+                    parse_listing(&run_script(&host, list_script("~")).await.unwrap(), "~");
+                println!(
+                    "home: {} dirs, {} entries, writable {}",
+                    listing.dirs.len(),
+                    listing.entries,
+                    listing.writable
+                );
+                assert_eq!(
+                    (listing.state, listing.path.as_str()),
+                    (DirState::Ok, probe.home.as_str())
+                );
+                assert!(too_broad(&listing.path, &probe.home));
+                assert_eq!(listing.parent.as_deref(), parent_of(&probe.home).as_deref());
+
+                let missing = parse_listing(
+                    &run_script(&host, list_script("~/definitely/not/here"))
+                        .await
+                        .unwrap(),
+                    "x",
+                );
+                assert_eq!(missing.state, DirState::Missing);
+
+                let name = format!("~/oleafly-scratch/wizard-probe-{}", std::process::id());
+                let made = parse_listing(
+                    &run_script(&host, make_dir_script(&name)).await.unwrap(),
+                    "",
+                );
+                assert_eq!(made.state, DirState::Ok);
+                let inside =
+                    parse_listing(&run_script(&host, list_script(&name)).await.unwrap(), "");
+                println!(
+                    "made {} (writable {}, entries {})",
+                    inside.path, inside.writable, inside.entries
+                );
+                assert!(inside.writable && inside.entries == 0 && inside.dirs.is_empty());
+                assert!(!too_broad(&inside.path, &probe.home));
+                // Only the empty folder this test made; rmdir refuses anything else.
+                run_script(&host, format!("rmdir '{}'\n", inside.path))
+                    .await
+                    .unwrap();
+                let gone = parse_listing(&run_script(&host, list_script(&name)).await.unwrap(), "");
+                assert_eq!(gone.state, DirState::Missing, "the test folder was removed");
             });
         });
     }
